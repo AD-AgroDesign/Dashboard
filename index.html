@@ -518,7 +518,7 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 <div id="login-overlay">
   <img class="home-bg-img" src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/home_bg.jpg" alt="">
   <div id="login-card">
-    <div id="login-logo">Agro<span>Design</span></div>
+    <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo_AgroDesign.png" alt="AgroDesign" id="login-logo-img" style="height:54px;width:auto;margin-bottom:2px;display:block;">
     <div id="login-tagline">Customer Reports Platform</div>
     <label class="login-label" for="login-email">Correo electrónico</label>
     <input class="login-input" type="email" id="login-email"
@@ -528,17 +528,20 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
       placeholder="••••••••" autocomplete="current-password"/>
     <button id="login-btn" onclick="doLogin()">Ingresar</button>
     <div id="login-error"></div>
-    <div id="login-version">AgroDesign &copy; 2025</div>
+    <div id="login-version">AgroDesign &copy; 2026</div>
   </div>
 </div>
 <div id="nav-tooltip"></div>
 
 <!-- HEADER ──────────────────────────────────────────── -->
 <div id="header">
-  <div id="hdr-brand">
+  <div id="hdr-brand" style="display:flex;align-items:center;gap:10px;">
+    <div style="height:34px;width:34px;overflow:hidden;flex-shrink:0;">
+      <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo_AgroDesign.png" alt="" style="height:34px;width:auto;">
+    </div>
     <div>
-      <div class="logo-text">Agro<span>Design</span></div>
-      <div class="logo-sub">Diseño de Paisajes Productivos</div>
+      <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">Agro<span style="color:#e8c050;">Design</span></div>
+      <div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:0.5px;text-transform:uppercase;">Diseño de Paisajes Productivos</div>
     </div>
   </div>
   <div id="hdr-title">
@@ -644,11 +647,18 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
         </div>
         <div class="home-content">
           <div>
-            <div class="home-logo-big">Agro<span>Design</span></div>
-            <div class="home-logo-sub">Diseño de Paisajes Productivos</div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:2px;">
+              <div style="height:48px;width:48px;overflow:hidden;flex-shrink:0;">
+                <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo_AgroDesign.png" alt="" style="height:48px;width:auto;">
+              </div>
+              <div>
+                <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1;">Agro<span style="color:#e8c050;">Design</span></div>
+                <div style="font-size:7px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:2px;">Diseño de Paisajes Productivos</div>
+              </div>
+            </div>
             <div class="home-gold-line"></div>
           </div>
-          <div class="home-eyebrow" id="home-eyebrow">Customer Report &nbsp;·&nbsp; 2025</div>
+          <div class="home-eyebrow" id="home-eyebrow">Customer Report &nbsp;·&nbsp; 2026</div>
           <div class="home-client-name" id="home-client-name">—</div>
           <div class="home-campo" id="home-campo-name">—</div>
           <div class="home-meta">
@@ -1457,7 +1467,7 @@ function mkGauge(id, val, maxVal) {
   if (chartReg[id]) chartReg[id].destroy();
   val = Math.max(0, val || 0);
   var steps = 5;
-  var scaleColors = ['#d42020','#e85520','#e88020','#c8c030','#7ac850','#2d8c1a'];
+  var scaleColors = ['#d42020','#e07020','#e8c020','#7ac850','#2d8c1a','#2d8c1a'];
   var band  = Math.floor(val / (maxVal / steps));
   var color = scaleColors[Math.min(band, scaleColors.length - 1)];
 
@@ -1830,7 +1840,7 @@ function buildClientObject(campo, capas) {
   return {
     nombre_cliente:    meta.nombre_cliente || '',
     campo:             campo.nombre,
-    fecha:             campo.fecha || '2025',
+    fecha:             campo.fecha || '2026',
     provincia:         campo.provincia || '',
     portada_img_url:   campo.portada_img_url || '',
     info_gral: {
@@ -1873,7 +1883,7 @@ function refreshFullSecs() {
   if (imgEl) { imgEl.src = C.portada_img_url || ''; imgEl.style.display = C.portada_img_url ? '' : 'none'; }
   var set = function(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; };
   set('home-eco-badge',   'Ecorreg. ' + (C.ecorregion.nombre || ''));
-  set('home-eyebrow',     'Customer Report  ·  ' + (C.fecha || '2025'));
+  set('home-eyebrow',     'Customer Report  ·  ' + (C.fecha || '2026'));
   set('home-client-name', C.nombre_cliente || '');
   set('home-campo-name',  'Campo ' + (C.campo || ''));
   set('home-meta-prov',   C.provincia || '');
