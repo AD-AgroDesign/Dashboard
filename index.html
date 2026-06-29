@@ -1078,6 +1078,9 @@ function activateSec(id) {
     }
   } else if (secSingleOv[id]) {
     theMap.addLayer(secSingleOv[id]);
+    if (id === 'restaurar' && anOvs['restaurar_contorno']) {
+      theMap.addLayer(anOvs['restaurar_contorno']);
+    }
   }
 
   setTimeout(function() { if (theMap) theMap.invalidateSize(); }, 80);
@@ -1141,7 +1144,7 @@ function initLayersForSec(id) {
       'paisaje-ini':    'paisaje_ini',
       'potencial':      'potencial',
       'multifuncional': 'multifuncional',
-      'restaurar':      'restaurar'
+      'restaurar':      'potencial'
     };
     var tipo = secTipoMap[id];
     if (!tipo) return;
@@ -1331,11 +1334,11 @@ function buildVizPanel(id) {
     html += mkContentFrame('mf-bar',   'Superficie (Ha)',  '<div class="chart-wrap"><canvas id="chart-mf-bar"></canvas></div>');
 
   } else if (id === 'restaurar') {
-    html += mkLayerFrame('restaurar', 'Áreas a Restaurar',
-      'Parches y corredores según potencial productivo',
-      '', '', '', true, 75);
-    html += mkLayerFrame('restaurar_contorno', 'Contornos de Áreas a Restaurar',
-      'Límites de los parches y corredores propuestos',
+    html += mkLayerFrame('restaurar-pot', 'Potencial Productivo',
+      'Clasificación del potencial del suelo',
+      'linear-gradient(to right,#2d8c1a,#7ac850,#f0d830,#e87020,#d42020)', 'PP 1 (alto)', 'PP 7 (bajo)', true, 75);
+    html += mkLayerFrame('restaurar_contorno', 'Áreas a Restaurar',
+      'Parches y corredores propuestos',
       '', '', '', true, 75);
     html += mkContentFrame('re-donut', 'Distribución por Potencial (%)', '<div class="chart-wrap"><canvas id="chart-re-donut"></canvas></div>');
     html += mkContentFrame('re-tbl',   'Detalle',                        '<table class="compact-table" id="tbl-re"></table>');
