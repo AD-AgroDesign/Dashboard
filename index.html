@@ -810,6 +810,7 @@ var anOvs      = {};    // analisis: layerId → imageOverlay
 var secSingleOv = {};   // single-overlay sections: secId → imageOverlay
 var ipMapIni   = null, ipMapDis = null, ipSyncing = false;
 var ipOvIni    = null, ipOvDis = null;  // stored overlay refs for impacto-prod
+var ipGjMf     = null;                  // GeoJSON overlay on ipMapDis (paisaje_no_agr_mf)
 var mapInited  = {};
 var chartReg   = {};
 var currentSec = 'home';
@@ -867,6 +868,7 @@ var GEO_DISENO = {
   'otros-parches':'#a0c96e'
 };
 var GEO_POTPROD = {1:'#2d8c1a',2:'#4fb32e',3:'#96cc42',4:'#c8db40',5:'#f0d830',6:'#e87020',7:'#d42020',8:'#909090'};
+var GEO_NO_AGR  = {'camino':'#000000','instalaciones':'#acacac','parche-le':'#d62edc','parche-herb':'#fb9a99','corredor-le':'#d62edc'};
 
 function geoJSONStyle(tipo, feature) {
   var p = feature ? (feature.properties || {}) : {};
@@ -895,6 +897,13 @@ function geoJSONStyle(tipo, feature) {
   if (tipo === 'restaurar') {
     var c = GEO_PAISAJE[unidad] || '#b0b0b0';
     return {fillColor:c, stroke:false, fillOpacity:0.85};
+  }
+  if (tipo === 'restaurar_contorno') {
+    return {color:'#ffffff', weight:1.5, opacity:0.9, fill:false};
+  }
+  if (tipo === 'paisaje_no_agr_ini' || tipo === 'paisaje_no_agr_mf') {
+    var c = GEO_NO_AGR[unidad] || '#b0b0b0';
+    return {fillColor:c, stroke:false, fillOpacity:0.75};
   }
   return {fillColor:'#888', stroke:false, fillOpacity:0.7};
 }
@@ -1063,6 +1072,10 @@ function activateSec(id) {
         anOvs[lyr.id].setOpacity(i === 0 ? 0.75 : 0);
       }
     });
+    if (anOvs['paisaje_no_agr_ini']) {
+      theMap.addLayer(anOvs['paisaje_no_agr_ini']);
+      anOvs['paisaje_no_agr_ini'].setStyle({fillOpacity:0.75, opacity:0.75});
+    }
   } else if (secSingleOv[id]) {
     theMap.addLayer(secSingleOv[id]);
   }
@@ -1103,6 +1116,25 @@ function initLayersForSec(id) {
       }
     });
 
+    /* Extra overlay: paisaje no agrícola sobre todas las capas de analisis */
+    var _capaNoAgrI = (C._capas_all || []).filter(function(c){ return c.tipo === 'paisaje_no_agr_ini'; })[0];
+    if (_capaNoAgrI && _capaNoAgrI.url_geojson) {
+      var _captNA = activeCampoId;
+      fetch(_capaNoAgrI.url_geojson)
+        .then(function(r){ return r.json(); })
+        .then(function(gj){
+          if (activeCampoId !== _captNA) return;
+          var lyr = L.geoJSON(gj, {style:function(f){ return geoJSONStyle('paisaje_no_agr_ini', f); }});
+          lyr._isVector = true;
+          anOvs['paisaje_no_agr_ini'] = lyr;
+          if (currentSec === 'analisis' && theMap) {
+            lyr.addTo(theMap);
+            lyr.setStyle({fillOpacity:0.75, opacity:0.75});
+          }
+        })
+        .catch(function(e){ console.warn('GeoJSON paisaje_no_agr_ini:', e); });
+    }
+
   } else {
     /* Secciones de mapa único: buscar capa por tipo en _capas_all */
     var secTipoMap = {
@@ -1137,6 +1169,24 @@ function initLayersForSec(id) {
     } else if (capa.url_imagen) {
       secSingleOv[id] = L.imageOverlay(capa.url_imagen, BOUNDS, {opacity:0.75, interactive:false});
     }
+
+    /* Extra overlay: contornos sobre la sección restaurar */
+    if (id === 'restaurar') {
+      var _capaContr = (C._capas_all || []).filter(function(c){ return c.tipo === 'restaurar_contorno'; })[0];
+      if (_capaContr && _capaContr.url_geojson) {
+        var _captRC = activeCampoId;
+        fetch(_capaContr.url_geojson)
+          .then(function(r){ return r.json(); })
+          .then(function(gj){
+            if (activeCampoId !== _captRC) return;
+            var lyr = L.geoJSON(gj, {style:function(f){ return geoJSONStyle('restaurar_contorno', f); }});
+            lyr._isVector = true;
+            anOvs['restaurar_contorno'] = lyr;
+            if (currentSec === 'restaurar' && theMap) lyr.addTo(theMap);
+          })
+          .catch(function(e){ console.warn('GeoJSON restaurar_contorno:', e); });
+      }
+    }
   }
 }
 
@@ -1146,11 +1196,29 @@ function initMapsIP() {
   ipMapDis = L.map('map-ip-dis', {center:mapCenter, zoom:ZOOM, zoomControl:false});
   mkSat().addTo(ipMapIni);
   mkSat().addTo(ipMapDis);
-  if (BOUNDS && RASTERS['dist_ini']) {
-    ipOvIni = L.imageOverlay('data:image/png;base64,'+RASTERS['dist_ini'], BOUNDS, {opacity:0.75});
-    ipOvDis = L.imageOverlay('data:image/png;base64,'+RASTERS['dist_dis'], BOUNDS, {opacity:0.75});
+  var _capas = C._capas_all || [];
+  var _capaIni = _capas.filter(function(c){ return c.tipo === 'dist_ini'; })[0];
+  var _capaDis = _capas.filter(function(c){ return c.tipo === 'dist_dis'; })[0];
+  var _capaMf  = _capas.filter(function(c){ return c.tipo === 'paisaje_no_agr_mf'; })[0];
+  if (BOUNDS && _capaIni && _capaIni.url_imagen) {
+    ipOvIni = L.imageOverlay(_capaIni.url_imagen, BOUNDS, {opacity:0.75});
     ipOvIni.addTo(ipMapIni);
+  }
+  if (BOUNDS && _capaDis && _capaDis.url_imagen) {
+    ipOvDis = L.imageOverlay(_capaDis.url_imagen, BOUNDS, {opacity:0.75});
     ipOvDis.addTo(ipMapDis);
+  }
+  if (_capaMf && _capaMf.url_geojson) {
+    var _capturedIP = activeCampoId;
+    fetch(_capaMf.url_geojson)
+      .then(function(r){ return r.json(); })
+      .then(function(gj){
+        if (activeCampoId !== _capturedIP) return;
+        ipGjMf = L.geoJSON(gj, {style:function(f){ return geoJSONStyle('paisaje_no_agr_mf', f); }});
+        ipGjMf._isVector = true;
+        ipGjMf.addTo(ipMapDis);
+      })
+      .catch(function(e){ console.warn('GeoJSON impacto-prod noAgr:', e); });
   }
   function sync(src, dst) {
     src.on('move', function() {
@@ -1236,6 +1304,7 @@ function buildVizPanel(id) {
       var grad = ANALISIS_GRADIENTS[lyr.id] || 'linear-gradient(to right,#ccc,#333)';
       html += mkLayerFrame(lyr.id, lyr.nombre, lyr.subtitulo, grad, lyr.leyenda_min, lyr.leyenda_max, on, opa);
     });
+    html += mkLayerFrame('paisaje_no_agr_ini', 'Paisaje no agrícola', 'Componentes no agrícolas del paisaje inicial', '', '', '', true, 75);
 
   } else if (id === 'paisaje-ini') {
     html += mkLayerFrame('composicion', 'Composición del Paisaje',
@@ -1265,6 +1334,9 @@ function buildVizPanel(id) {
     html += mkLayerFrame('restaurar', 'Áreas a Restaurar',
       'Parches y corredores según potencial productivo',
       '', '', '', true, 75);
+    html += mkLayerFrame('restaurar_contorno', 'Contornos de Áreas a Restaurar',
+      'Límites de los parches y corredores propuestos',
+      '', '', '', true, 75);
     html += mkContentFrame('re-donut', 'Distribución por Potencial (%)', '<div class="chart-wrap"><canvas id="chart-re-donut"></canvas></div>');
     html += mkContentFrame('re-tbl',   'Detalle',                        '<table class="compact-table" id="tbl-re"></table>');
     html += mkContentFrame('re-bar',   'Superficie (Ha)',                '<div class="chart-wrap-sm"><canvas id="chart-re-bar"></canvas></div>');
@@ -1276,6 +1348,9 @@ function buildVizPanel(id) {
     html += mkLayerFrame('dist_dis', 'Distancia a Naturaleza — Diseño',
       'Distancia a áreas naturales en el paisaje multifuncional',
       'linear-gradient(to right,#32c832,#f0a820,#c82020)', 'Cerca', 'Lejos', true, 75);
+    html += mkLayerFrame('paisaje_no_agr_mf', 'Paisaje no agrícola — Diseño',
+      'Componentes no agrícolas del paisaje multifuncional',
+      '', '', '', true, 65);
     html += mkContentFrame('ip-borde', 'Densidad de Borde (m/Ha)',
       '<div class="chart-wrap-sm"><canvas id="chart-ip-borde"></canvas></div>');
     var ip = C.impacto_produccion || {};
@@ -1373,6 +1448,19 @@ function toggleAnLayer(id, checked) {
     if (vfEl2) vfEl2.classList.toggle('active-layer', checked);
     return;
   }
+  if (id === 'paisaje_no_agr_mf' && ipGjMf && ipMapDis) {
+    if (checked) {
+      ipMapDis.addLayer(ipGjMf);
+      var sliderMf = document.querySelector('#vf-paisaje_no_agr_mf input[type=range]');
+      var opaMf = (sliderMf ? parseInt(sliderMf.value) : 65) / 100;
+      ipGjMf.setStyle({fillOpacity:opaMf, opacity:opaMf});
+    } else {
+      ipMapDis.removeLayer(ipGjMf);
+    }
+    var vfMf = document.getElementById('vf-paisaje_no_agr_mf');
+    if (vfMf) vfMf.classList.toggle('active-layer', checked);
+    return;
+  }
 }
 
 /* ── Opacity slider ─────────────────────────────────── */
@@ -1390,6 +1478,7 @@ function setLayerOpa(id, val) {
   }
   if (id === 'dist_ini' && ipOvIni) { ipOvIni.setOpacity(val/100); return; }
   if (id === 'dist_dis' && ipOvDis) { ipOvDis.setOpacity(val/100); return; }
+  if (id === 'paisaje_no_agr_mf' && ipGjMf) { ipGjMf.setStyle({fillOpacity:val/100, opacity:val/100}); return; }
   if (secSingleOv[currentSec]) {
     var ov = secSingleOv[currentSec];
     if (ov._isVector) { ov.setStyle({fillOpacity:val/100, opacity:val/100}); }
