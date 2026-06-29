@@ -1273,8 +1273,10 @@ function buildVizPanel(id) {
       '<a class="vf-dl-btn" href="'+(dl.geo_url||'#')+'" '+(dl.geo_url?'target="_blank"':'')+'>'+
       '<i class="fa-solid fa-location-dot"></i>Descargar KMZ</a>');
     html += mkContentFrame('info-dl-impl', 'Implementación',
-      '<a class="vf-dl-btn" href="'+(dl.implementacion_url||'#')+'" '+(dl.implementacion_url?'target="_blank"':'')+'>'+
-      '<i class="fa-solid fa-clipboard-list"></i>Descargar Infografía</a>');
+      '<a class="vf-dl-btn" href="https://drive.google.com/file/d/1TCcFxGgeZBUTusy3JhQBjXAppDnSGHqj/view" target="_blank">'+
+      '<i class="fa-solid fa-image"></i>Descargar Infografía</a>'+
+      '<a class="vf-dl-btn" href="https://drive.google.com/file/d/1d36wqk4dpfR8snD-BxdSoWY8N_yt5G6M/edit" target="_blank">'+
+      '<i class="fa-solid fa-book"></i>Descargar Manual</a>');
     html += mkContentFrame('info-dl-pdf', 'Informe PDF',
       '<a class="vf-dl-btn" href="'+(dl.informe_url||'#')+'" '+(dl.informe_url?'target="_blank"':'')+'>'+
       '<i class="fa-regular fa-file-pdf"></i>Descargar Informe</a>');
