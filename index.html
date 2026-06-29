@@ -1840,8 +1840,12 @@ async function afterLogin(session) {
     return a.campo.localeCompare(b.campo, 'es');
   });
 
-  /* Guardar email en profiles para panel admin */
-  await _sb.from('profiles').update({email: currentUser.email}).eq('id', currentUser.id);
+  /* Guardar email y nombre en profiles para panel admin */
+  var _meta = currentUser.user_metadata || {};
+  var _nombre = _meta.full_name || _meta.name || null;
+  var _upd = {email: currentUser.email};
+  if (_nombre) _upd.nombre = _nombre;
+  await _sb.from('profiles').update(_upd).eq('id', currentUser.id);
 
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('login-email').value    = '';
@@ -2126,7 +2130,7 @@ async function loadUsuarios() {
   if (!tableEl) return;
   tableEl.innerHTML = '<p style="color:var(--muted);font-size:12px">Cargando...</p>';
 
-  var r1 = await _sb.from('profiles').select('id, email, rol, cliente_id').order('rol');
+  var r1 = await _sb.from('profiles').select('id, email, nombre, rol, cliente_id').order('rol');
   if (r1.error) { tableEl.innerHTML = '<p style="color:#dc2626;font-size:12px">Error: '+r1.error.message+'</p>'; return; }
 
   var r2 = await _sb.from('clientes').select('id, nombre').order('nombre');
@@ -2143,6 +2147,8 @@ function renderAdminTable(usuarios) {
     + _allClientes.map(function(c){ return '<option value="'+c.id+'">'+c.nombre+'</option>'; }).join('');
 
   var rows = usuarios.map(function(u) {
+    var nomInput = '<input class="admin-select" id="nom-'+u.id+'" type="text" value="'+(u.nombre||'')+'" placeholder="Nombre" style="max-width:130px">';
+
     var rolSel = '<select class="admin-select" id="rol-'+u.id+'">'
       + '<option value="admin"'+(u.rol==='admin'?' selected':'')+'>Admin</option>'
       + '<option value="cliente"'+(u.rol==='cliente'?' selected':'')+'>Cliente</option>'
@@ -2155,7 +2161,9 @@ function renderAdminTable(usuarios) {
     var cliSel = '<select class="admin-select" id="cli-'+u.id+'">'+cliOpts+'</select>';
 
     return '<tr>'
-      + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">'+(u.email||'—')+'</td>'
+      + '<td style="font-size:11px"><div style="font-weight:700;color:var(--text)">'+(u.nombre||'')+'</div>'
+      + '<div style="color:var(--muted);font-size:10px">'+(u.email||'—')+'</div></td>'
+      + '<td>'+nomInput+'</td>'
       + '<td>'+rolSel+'</td>'
       + '<td>'+cliSel+'</td>'
       + '<td><button class="admin-save-btn" id="savebtn-'+u.id+'" onclick="saveUser(\''+u.id+'\')">Guardar</button></td>'
@@ -2163,7 +2171,7 @@ function renderAdminTable(usuarios) {
   }).join('');
 
   tableEl.innerHTML = '<table class="admin-table">'
-    + '<thead><tr><th>Email</th><th>Rol</th><th>Cliente</th><th></th></tr></thead>'
+    + '<thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Cliente</th><th></th></tr></thead>'
     + '<tbody>'+rows+'</tbody></table>';
 }
 
@@ -2176,8 +2184,10 @@ async function saveUser(userId) {
   btnEl.disabled = true;
   btnEl.textContent = '...';
 
+  var nomEl = document.getElementById('nom-'+userId);
   var r = await _sb.from('profiles').update({
-    rol:       rolEl.value,
+    nombre:     nomEl ? nomEl.value.trim() || null : undefined,
+    rol:        rolEl.value,
     cliente_id: cliEl.value || null
   }).eq('id', userId);
 
