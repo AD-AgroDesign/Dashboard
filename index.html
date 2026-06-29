@@ -294,13 +294,13 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 }
 .dl-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
 .dl-btn i { font-size:15px; width:20px; text-align:center; }
-.info-body { flex:1; overflow-y:auto; padding:28px 36px; }
-.info-body h2 { font-size:16px; font-weight:700; color:var(--hdr); margin-bottom:20px; padding-bottom:8px; border-bottom:2px solid var(--acc); }
-.info-section { margin-bottom:22px; }
-.info-section h3 { font-size:13px; font-weight:700; color:var(--hdr); margin-bottom:6px; text-decoration:underline; }
-.info-section p  { font-size:12.5px; line-height:1.7; color:#333; }
+.info-body { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+.info-body h2 { font-size:16px; font-weight:700; color:var(--hdr); margin-bottom:4px; padding-bottom:8px; border-bottom:2px solid var(--acc); }
+.info-section { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.info-section h3 { font-size:12px; font-weight:700; color:var(--hdr); margin-bottom:6px; }
+.info-section p  { font-size:12.5px; line-height:1.7; color:#444; }
 .info-section ul { padding-left:20px; }
-.info-section li { font-size:12px; line-height:1.7; color:#333; }
+.info-section li { font-size:12px; line-height:1.7; color:#444; }
 
 /* ── Ecorregiones ───────────────────────────────────── */
 #full-eco { display:none; background:var(--bg); overflow:hidden; }
@@ -535,14 +535,8 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 
 <!-- HEADER ──────────────────────────────────────────── -->
 <div id="header">
-  <div id="hdr-brand" style="display:flex;align-items:center;gap:10px;">
-    <div style="height:34px;width:34px;overflow:hidden;flex-shrink:0;">
-      <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo_AgroDesign.png" alt="" style="height:34px;width:auto;">
-    </div>
-    <div>
-      <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">Agro<span style="color:#e8c050;">Design</span></div>
-      <div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:0.5px;text-transform:uppercase;">Diseño de Paisajes Productivos</div>
-    </div>
+  <div id="hdr-brand">
+    <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo2_AgroDesign.png" alt="AgroDesign" style="height:36px;width:auto;">
   </div>
   <div id="hdr-title">
     <div class="cr">Customer Report</div>
@@ -647,15 +641,7 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
         </div>
         <div class="home-content">
           <div>
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:2px;">
-              <div style="height:48px;width:48px;overflow:hidden;flex-shrink:0;">
-                <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo_AgroDesign.png" alt="" style="height:48px;width:auto;">
-              </div>
-              <div>
-                <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1;">Agro<span style="color:#e8c050;">Design</span></div>
-                <div style="font-size:7px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:2px;">Diseño de Paisajes Productivos</div>
-              </div>
-            </div>
+            <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo2_AgroDesign.png" alt="AgroDesign" style="height:52px;width:auto;margin-bottom:2px;display:block;">
             <div class="home-gold-line"></div>
           </div>
           <div class="home-eyebrow" id="home-eyebrow">Customer Report &nbsp;·&nbsp; 2026</div>
@@ -1899,7 +1885,8 @@ function refreshFullSecs() {
   var infoBody = document.querySelector('#full-info .info-body');
   if (infoBody) {
     var ig = C.info_gral || {};
-    var biblHtml = (ig.bibliografia || []).map(function(b) { return '<li>' + b + '</li>'; }).join('');
+    var biblHtml = '<li>Morello, J., Matteucci, S., Rodriguez A. &amp; Silva, M. (2012). <em>Ecorregiones y complejos ecosistémicos Argentinos.</em></li>'
+               + '<li>SAGyP, INTA. Proyecto PNUD ARG. 85/019 <em>\'Atlas de Suelos de la República Argentina. Escala 1:500000 y 1:1000000\'.</em></li>';
     infoBody.innerHTML =
       '<h2>Descripción General</h2>'
       + (ig.ecorregion ? '<div class="info-section"><h3>Ecoregión:</h3><p>' + ig.ecorregion + '</p></div>' : '')
