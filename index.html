@@ -392,7 +392,7 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 
 /* ── Perfil / Cambio de contraseña ─────────────────────── */
 #full-perfil { display:none; background:var(--bg); }
-#full-perfil.active { display:flex; justify-content:center; align-items:flex-start; padding:40px 20px; overflow-y:auto; }
+#full-perfil.active { display:flex; flex-direction:column; align-items:center; gap:24px; padding:40px 20px; overflow-y:auto; }
 .perfil-card {
   background:#fff; border-radius:12px; border:1px solid var(--border);
   padding:32px 36px; width:100%; max-width:440px;
@@ -432,6 +432,19 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 .perfil-msg.ok  { display:block; background:#f0fdf4; border:1px solid #86efac; color:#15803d; }
 .perfil-msg.err { display:block; background:#fef2f2; border:1px solid #fca5a5; color:#dc2626; }
 .perfil-divider { border:none; border-top:1px solid var(--border); margin:28px 0; }
+/* ── Admin panel ─────────────────────────────────────── */
+#admin-panel { display:none; width:100%; max-width:680px; }
+.admin-card { max-width:680px !important; }
+.admin-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; }
+.admin-table th { text-align:left; padding:8px 10px; background:var(--bg); color:var(--muted); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; border-bottom:1px solid var(--border); }
+.admin-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.admin-table tr:last-child td { border-bottom:none; }
+.admin-select { padding:5px 8px; border:1.5px solid var(--border); border-radius:6px; font-size:12px; color:var(--text); background:#fff; cursor:pointer; max-width:160px; }
+.admin-save-btn { padding:5px 12px; border:none; border-radius:6px; background:var(--hdr); color:#fff; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.admin-save-btn:hover { background:var(--acc); }
+.admin-save-btn.saved { background:#15803d; }
+.admin-reload-btn { padding:6px 14px; border:1.5px solid var(--border); border-radius:7px; background:#fff; color:var(--text); font-size:11px; font-weight:700; cursor:pointer; margin-bottom:14px; }
+.admin-reload-btn:hover { border-color:var(--acc); color:var(--acc); }
 #logout-btn {
   width:100%; padding:10px; border:1.5px solid var(--border); border-radius:9px;
   background:transparent; color:var(--muted); font-size:13px; font-weight:600;
@@ -783,6 +796,16 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
         <button id="logout-btn" onclick="doLogout()">
           <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
         </button>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL (solo superadmin) -->
+    <div id="admin-panel">
+      <div class="perfil-card admin-card">
+        <h2><i class="fa-solid fa-users-gear" style="color:var(--acc);margin-right:8px"></i>Gestión de Usuarios</h2>
+        <p class="perfil-sub">Asigná roles y clientes a cada cuenta</p>
+        <button class="admin-reload-btn" onclick="loadUsuarios()"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+        <div id="admin-users-table"><p style="color:var(--muted);font-size:12px">Cargando...</p></div>
       </div>
     </div>
 
@@ -1696,6 +1719,10 @@ function initChartsForSec(id) {
     if (emailEl && currentUser) emailEl.textContent = currentUser.email || '—';
     var msgEl = document.getElementById('perfil-msg');
     if (msgEl) { msgEl.className = 'perfil-msg'; }
+    if (currentUser && currentUser.email === 'profmiguelmussi@gmail.com') {
+      document.getElementById('admin-panel').style.display = 'block';
+      loadUsuarios();
+    }
   }
 }
 
@@ -1812,6 +1839,9 @@ async function afterLogin(session) {
     if (nc !== 0) return nc;
     return a.campo.localeCompare(b.campo, 'es');
   });
+
+  /* Guardar email en profiles para panel admin */
+  await _sb.from('profiles').update({email: currentUser.email}).eq('id', currentUser.id);
 
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('login-email').value    = '';
@@ -2085,6 +2115,80 @@ async function doChangePassword() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Guardar nueva contraseña';
+  }
+}
+
+/* == Admin: gestión de usuarios == */
+var _allClientes = [];
+
+async function loadUsuarios() {
+  var tableEl = document.getElementById('admin-users-table');
+  if (!tableEl) return;
+  tableEl.innerHTML = '<p style="color:var(--muted);font-size:12px">Cargando...</p>';
+
+  var r1 = await _sb.from('profiles').select('id, email, rol, cliente_id').order('rol');
+  if (r1.error) { tableEl.innerHTML = '<p style="color:#dc2626;font-size:12px">Error: '+r1.error.message+'</p>'; return; }
+
+  var r2 = await _sb.from('clientes').select('id, nombre').order('nombre');
+  _allClientes = r2.data || [];
+
+  renderAdminTable(r1.data || []);
+}
+
+function renderAdminTable(usuarios) {
+  var tableEl = document.getElementById('admin-users-table');
+  if (!tableEl) return;
+
+  var clienteOpts = '<option value="">— sin asignar —</option>'
+    + _allClientes.map(function(c){ return '<option value="'+c.id+'">'+c.nombre+'</option>'; }).join('');
+
+  var rows = usuarios.map(function(u) {
+    var rolSel = '<select class="admin-select" id="rol-'+u.id+'">'
+      + '<option value="admin"'+(u.rol==='admin'?' selected':'')+'>Admin</option>'
+      + '<option value="cliente"'+(u.rol==='cliente'?' selected':'')+'>Cliente</option>'
+      + '</select>';
+
+    var cliOpts = '<option value="">— sin asignar —</option>'
+      + _allClientes.map(function(c){
+          return '<option value="'+c.id+'"'+(u.cliente_id===c.id?' selected':'')+'>'+c.nombre+'</option>';
+        }).join('');
+    var cliSel = '<select class="admin-select" id="cli-'+u.id+'">'+cliOpts+'</select>';
+
+    return '<tr>'
+      + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">'+(u.email||'—')+'</td>'
+      + '<td>'+rolSel+'</td>'
+      + '<td>'+cliSel+'</td>'
+      + '<td><button class="admin-save-btn" id="savebtn-'+u.id+'" onclick="saveUser(\''+u.id+'\')">Guardar</button></td>'
+      + '</tr>';
+  }).join('');
+
+  tableEl.innerHTML = '<table class="admin-table">'
+    + '<thead><tr><th>Email</th><th>Rol</th><th>Cliente</th><th></th></tr></thead>'
+    + '<tbody>'+rows+'</tbody></table>';
+}
+
+async function saveUser(userId) {
+  var rolEl = document.getElementById('rol-'+userId);
+  var cliEl = document.getElementById('cli-'+userId);
+  var btnEl = document.getElementById('savebtn-'+userId);
+  if (!rolEl || !cliEl || !btnEl) return;
+
+  btnEl.disabled = true;
+  btnEl.textContent = '...';
+
+  var r = await _sb.from('profiles').update({
+    rol:       rolEl.value,
+    cliente_id: cliEl.value || null
+  }).eq('id', userId);
+
+  if (r.error) {
+    btnEl.textContent = 'Error';
+    btnEl.style.background = '#dc2626';
+    setTimeout(function(){ btnEl.textContent = 'Guardar'; btnEl.style.background = ''; btnEl.disabled = false; }, 2500);
+  } else {
+    btnEl.textContent = '✓ Guardado';
+    btnEl.classList.add('saved');
+    setTimeout(function(){ btnEl.textContent = 'Guardar'; btnEl.classList.remove('saved'); btnEl.disabled = false; }, 2000);
   }
 }
 
