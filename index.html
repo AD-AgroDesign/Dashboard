@@ -432,6 +432,11 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 .perfil-msg.ok  { display:block; background:#f0fdf4; border:1px solid #86efac; color:#15803d; }
 .perfil-msg.err { display:block; background:#fef2f2; border:1px solid #fca5a5; color:#dc2626; }
 .perfil-divider { border:none; border-top:1px solid var(--border); margin:28px 0; }
+/* Layout 2 columnas: sólo admins (card ensanchada para igualar paneles inferiores) */
+.perfil-grid { display:grid; grid-template-columns:1fr; gap:0; }
+#full-perfil.admin-mode .perfil-account { max-width:760px; }
+#full-perfil.admin-mode .perfil-grid { grid-template-columns:1fr 1fr; gap:0 40px; }
+@media (max-width:640px) { #full-perfil.admin-mode .perfil-grid { grid-template-columns:1fr; gap:0; } }
 /* ── Admin panel ─────────────────────────────────────── */
 #admin-panel { display:none; width:100%; max-width:760px; }
 .admin-card { max-width:760px !important; }
@@ -802,21 +807,27 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 
     <!-- PERFIL -->
     <div class="full-sec" id="full-perfil">
-      <div class="perfil-card">
+      <div class="perfil-card perfil-account">
         <h2><i class="fa-solid fa-circle-user" style="color:var(--acc);margin-right:8px"></i>Mi Perfil</h2>
         <p class="perfil-sub">Administrá tu cuenta AgroDesign</p>
-        <p class="perfil-section-title">Cuenta</p>
-        <div class="perfil-email-row">
-          <i class="fa-solid fa-envelope"></i>
-          <span id="perfil-email-text">—</span>
+        <div class="perfil-grid">
+          <div class="perfil-col">
+            <p class="perfil-section-title">Cuenta</p>
+            <div class="perfil-email-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span id="perfil-email-text">—</span>
+            </div>
+          </div>
+          <div class="perfil-col">
+            <p class="perfil-section-title">Cambiar contraseña</p>
+            <label class="perfil-label" for="perfil-new-pass">Nueva contraseña</label>
+            <input class="perfil-input" type="password" id="perfil-new-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+            <label class="perfil-label" for="perfil-confirm-pass">Confirmar contraseña</label>
+            <input class="perfil-input" type="password" id="perfil-confirm-pass" placeholder="Repetí la contraseña" autocomplete="new-password"/>
+            <button id="perfil-btn" onclick="doChangePassword()">Guardar nueva contraseña</button>
+            <div class="perfil-msg" id="perfil-msg"></div>
+          </div>
         </div>
-        <p class="perfil-section-title">Cambiar contraseña</p>
-        <label class="perfil-label" for="perfil-new-pass">Nueva contraseña</label>
-        <input class="perfil-input" type="password" id="perfil-new-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
-        <label class="perfil-label" for="perfil-confirm-pass">Confirmar contraseña</label>
-        <input class="perfil-input" type="password" id="perfil-confirm-pass" placeholder="Repetí la contraseña" autocomplete="new-password"/>
-        <button id="perfil-btn" onclick="doChangePassword()">Guardar nueva contraseña</button>
-        <div class="perfil-msg" id="perfil-msg"></div>
         <hr class="perfil-divider"/>
         <button id="logout-btn" onclick="doLogout()">
           <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
@@ -1827,9 +1838,13 @@ function initChartsForSec(id) {
     var msgEl = document.getElementById('perfil-msg');
     if (msgEl) { msgEl.className = 'perfil-msg'; }
     /* Panel de puntos del mapa: todos los admins */
+    var perfilSec = document.getElementById('full-perfil');
     if (currentProfile && currentProfile.rol === 'admin') {
+      perfilSec.classList.add('admin-mode');
       document.getElementById('admin-puntos-panel').style.display = 'block';
       loadPuntos();
+    } else {
+      perfilSec.classList.remove('admin-mode');
     }
     /* Gestión de usuarios: sólo superadmin */
     if (currentUser && currentUser.email === 'profmiguelmussi@gmail.com') {
