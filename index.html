@@ -494,42 +494,58 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 }
 #login-error.visible { display:block; }
 #login-version { margin-top:20px; font-size:10px; color:var(--muted); }
-#login-version { margin-top:20px; font-size:10px; color:var(--muted); }
-#login-error.visible { display:block; }
-}
-  font-size:12px; display:none; text-align:center;
-  background:#fef2f2; border:1px solid #fca5a5; color:#dc2626;
-  width:100%; margin-top:12px; padding:9px 12px; border-radius:7px;
-#login-error {
-#login-btn:disabled { background:var(--muted); cursor:not-allowed; }
-#login-btn:hover { background:var(--acc); }
-}
-  cursor:pointer; letter-spacing:.3px; transition:background .2s;
-  background:var(--hdr); color:#fff; font-size:14px; font-weight:700;
-  width:100%; margin-top:24px; padding:12px; border:none; border-radius:9px;
-#login-btn {
-.login-input:focus { border-color:var(--acc); }
-}
-  transition:border-color .2s;
-  font-size:13px; color:var(--text); background:var(--bg); outline:none;
-  width:100%; padding:10px 13px; border:1.5px solid var(--border); border-radius:8px;
-.login-input {
-.login-label { width:100%; font-size:11px; font-weight:700; color:var(--text); margin-bottom:5px; margin-top:14px; letter-spacing:.3px; }
-#login-tagline { font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin-bottom:32px; }
-#login-logo span { color:var(--gold); }
-#login-logo { font-size:26px; font-weight:800; color:var(--hdr); letter-spacing:-0.5px; margin-bottom:2px; }
-}
-  display:flex; flex-direction:column; align-items:center;
-  width:360px; box-shadow:0 24px 60px rgba(0,0,0,.35);
-  background:#fff; border-radius:16px; padding:44px 40px 36px;
-#login-card {
-#login-overlay.hidden { display:none; }
-}
-  display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg,var(--hdr) 0%,var(--hdr2) 100%);
-  position:fixed; inset:0; z-index:9999;
-#login-overlay {
-/* ── Login Overlay ───────────────────────────────────────── */
+
+/* ── Balance (sección admin) ─────────────────────────── */
+#full-balance { display:none; flex-direction:column; gap:14px; background:var(--bg); padding:18px 20px; overflow-y:auto; }
+#full-balance.active { display:flex; }
+.bal-head { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.bal-title { font-size:17px; font-weight:800; color:var(--hdr); }
+.bal-title i { color:var(--acc); margin-right:8px; }
+.bal-sub { font-size:11px; color:var(--muted); }
+.bal-kpi-row { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+.bal-kpi { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 12px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.bal-kpi-num { font-size:26px; font-weight:300; color:var(--hdr); line-height:1; }
+.bal-kpi-lbl { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-top:7px; line-height:1.3; }
+.bal-map-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.bal-map-card h4 { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); font-weight:700; margin:2px 4px 8px; }
+#balance-map { width:100%; height:clamp(280px,44vh,620px); border-radius:9px; background:#eef3e9; z-index:1; }
+/* tinte verde claro de la paleta sobre el basemap minimalista */
+#balance-map .leaflet-tile-pane { filter:hue-rotate(58deg) saturate(.72) brightness(1.03); }
+.bal-pin { width:18px; height:18px; border-radius:50% 50% 50% 0; background:var(--acc); border:2px solid #fff; transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,.4); }
+.bal-pin::after { content:''; position:absolute; top:5px; left:5px; width:6px; height:6px; border-radius:50%; background:var(--hdr); }
+#balance-map .leaflet-popup-content-wrapper { border-radius:9px; box-shadow:0 4px 16px rgba(0,0,0,.25); }
+#balance-map .leaflet-popup-content { margin:11px 14px; font-family:'Segoe UI',Arial,sans-serif; }
+.bal-pop-name { font-size:13px; font-weight:800; color:var(--hdr); margin-bottom:5px; }
+.bal-pop-cli { font-size:10px; color:var(--muted); font-weight:600; margin-bottom:7px; }
+.bal-pop-row { display:flex; justify-content:space-between; gap:18px; font-size:11.5px; padding:2px 0; }
+.bal-pop-row span:first-child { color:var(--muted); }
+.bal-pop-row span:last-child { font-weight:700; color:var(--text); }
+.bal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.bal-card { min-width:0; background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.bal-card h4 { font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); font-weight:700; margin-bottom:10px; }
+.bal-chart-wrap { position:relative; height:230px; min-width:0; }
+.bal-table-card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.bal-table { width:100%; border-collapse:collapse; font-size:12px; }
+.bal-table th { text-align:left; padding:7px 8px; font-size:9.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); border-bottom:1.5px solid var(--border); }
+.bal-table th.num, .bal-table td.num { text-align:right; }
+.bal-table td { padding:7px 8px; border-bottom:1px solid #f0f4ec; }
+.bal-table td.num { font-weight:600; color:var(--hdr); }
+.bal-table tr:last-child td { border-bottom:none; }
+.bal-table tfoot td { border-top:1.5px solid var(--border); border-bottom:none; font-weight:800; color:var(--hdr); padding-top:9px; }
+@media (max-width:880px){ .bal-kpi-row{ grid-template-columns:repeat(2,1fr); } .bal-grid{ grid-template-columns:1fr; } }
+/* panel puntos del mapa (admins) */
+#admin-puntos-panel { display:none; width:100%; max-width:760px; margin-top:18px; }
+.coord-input { padding:5px 6px; border:1.5px solid var(--border); border-radius:6px; font-size:12px; color:var(--text); background:#fff; width:100%; box-sizing:border-box; }
+.punto-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--card); border:1px solid var(--border); border-radius:9px; padding:14px; }
+.punto-form-fields { min-width:0; }
+.punto-form-map { min-width:0; display:flex; flex-direction:column; }
+#punto-pick-map { flex:1; min-height:240px; border-radius:8px; border:1px solid var(--border); background:#1b2a16; }
+.punto-origen { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:2px 6px; border-radius:10px; }
+.punto-origen.campo { background:#e7f3dc; color:var(--hdr); }
+.punto-origen.libre { background:#fef0d6; color:#9a6b12; }
+.admin-del-btn { padding:5px 9px; border:1.5px solid var(--border); border-radius:6px; background:#fff; color:var(--red); font-size:11px; font-weight:700; cursor:pointer; }
+.admin-del-btn:hover { border-color:var(--red); background:#fef2f2; }
+@media (max-width:720px){ .punto-form-grid{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -614,6 +630,9 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
     </div>
     <div class="nav-item" data-sec="impacto-prod" onclick="showSec('impacto-prod')">
       <i class="fa-solid fa-tractor"></i><span class="nav-label">Impacto Producción</span>
+    </div>
+    <div class="nav-item" id="nav-balance" data-sec="balance" onclick="showSec('balance')" style="display:none">
+      <i class="fa-solid fa-chart-pie"></i><span class="nav-label">Balance</span>
     </div>
     <div class="nav-item" data-sec="perfil" onclick="showSec('perfil')" style="margin-top:auto;border-top:1px solid rgba(255,255,255,.1)">
       <i class="fa-solid fa-user"></i><span class="nav-label">Mi Perfil</span>
@@ -813,6 +832,87 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
           <div id="admin-users-table"><p style="color:var(--muted);font-size:12px">Cargando...</p></div>
         </div>
       </div>
+
+      <!-- PANEL PUNTOS DEL MAPA (todos los admins) -->
+      <div id="admin-puntos-panel">
+        <div class="perfil-card admin-card">
+          <h2><i class="fa-solid fa-location-dot" style="color:var(--acc);margin-right:8px"></i>Puntos del mapa (Balance)</h2>
+          <p class="perfil-sub">Marcadores del planisferio. Los campos precargan sus valores; podés editarlos o agregar puntos nuevos. No afectan los KPIs ni las métricas.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+            <button class="admin-save-btn" id="punto-nuevo-btn" onclick="openPuntoForm()"><i class="fa-solid fa-plus"></i> Agregar punto</button>
+            <button class="admin-reload-btn" onclick="importarCampos()" style="margin-bottom:0"><i class="fa-solid fa-download"></i> Importar campos faltantes</button>
+            <button class="admin-reload-btn" onclick="loadPuntos()" style="margin-bottom:0"><i class="fa-solid fa-rotate-right"></i> Actualizar</button>
+          </div>
+
+          <!-- Formulario alta/edición con mini-mapa -->
+          <div id="punto-form" style="display:none">
+            <div class="punto-form-grid">
+              <div class="punto-form-fields">
+                <input type="hidden" id="punto-id">
+                <label class="perfil-label" style="margin-top:0">Nombre del campo / punto</label>
+                <input class="coord-input" id="punto-nombre" type="text" placeholder="Ej. La Blanca">
+                <label class="perfil-label">Cliente o proyecto</label>
+                <input class="coord-input" id="punto-cliente" type="text" placeholder="Ej. AgroDesign">
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1"><label class="perfil-label">Lat</label><input class="coord-input" id="punto-lat" type="number" step="any" placeholder="-37.245"></div>
+                  <div style="flex:1"><label class="perfil-label">Lng</label><input class="coord-input" id="punto-lng" type="number" step="any" placeholder="-60.348"></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1"><label class="perfil-label">Ha. totales</label><input class="coord-input" id="punto-hatotal" type="number" step="any" placeholder="0"></div>
+                  <div style="flex:1"><label class="perfil-label">Ha. naturaleza</label><input class="coord-input" id="punto-hanat" type="number" step="any" placeholder="0"></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                  <button class="admin-save-btn" id="punto-save-btn" onclick="savePunto()">Guardar</button>
+                  <button class="admin-reload-btn" onclick="closePuntoForm()" style="margin-bottom:0">Cancelar</button>
+                </div>
+              </div>
+              <div class="punto-form-map">
+                <label class="perfil-label" style="margin-top:0">Click en el mapa para ubicar el punto</label>
+                <div id="punto-pick-map"></div>
+              </div>
+            </div>
+            <hr class="perfil-divider" style="margin:18px 0">
+          </div>
+
+          <div id="admin-puntos-table"><p style="color:var(--muted);font-size:12px">Cargando...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BALANCE (solo admin) -->
+    <div class="full-sec" id="full-balance">
+      <div class="bal-head">
+        <div class="bal-title"><i class="fa-solid fa-chart-pie"></i>Balance de la cartera</div>
+        <div class="bal-sub">Métricas agregadas de todos los establecimientos rediseñados</div>
+      </div>
+
+      <div class="bal-kpi-row">
+        <div class="bal-kpi"><div class="bal-kpi-num" id="bal-kpi-total">—</div><div class="bal-kpi-lbl">Sup. Total intervenida (Ha)</div></div>
+        <div class="bal-kpi"><div class="bal-kpi-num" id="bal-kpi-nat">—</div><div class="bal-kpi-lbl">Sup. Total de Naturaleza (Ha)</div></div>
+        <div class="bal-kpi"><div class="bal-kpi-num" id="bal-kpi-rest">—</div><div class="bal-kpi-lbl">Sup. Naturaleza Restaurada (Ha)</div></div>
+        <div class="bal-kpi"><div class="bal-kpi-num" id="bal-kpi-200m">—</div><div class="bal-kpi-lbl">Área Productiva &lt;200m Nat. (Ha)</div></div>
+        <div class="bal-kpi"><div class="bal-kpi-num" id="bal-kpi-estab">—</div><div class="bal-kpi-lbl">Establecimientos rediseñados</div></div>
+      </div>
+
+      <div class="bal-map-card">
+        <h4><i class="fa-solid fa-earth-americas" style="margin-right:6px"></i>Ubicación de las intervenciones</h4>
+        <div id="balance-map"></div>
+      </div>
+
+      <div class="bal-grid">
+        <div class="bal-card"><h4>Naturaleza Total (Ha) por establecimiento</h4><div class="bal-chart-wrap"><canvas id="balance-chart-nattotal"></canvas></div></div>
+        <div class="bal-card"><h4>Naturaleza Inicial vs. Diseño (Ha) y Naturaleza (%)</h4><div class="bal-chart-wrap"><canvas id="balance-chart-natpct"></canvas></div></div>
+        <div class="bal-card"><h4>Naturaleza inicial (%) vs. diseño (%)</h4><div class="bal-chart-wrap"><canvas id="balance-chart-inivsdis"></canvas></div></div>
+        <div class="bal-card"><h4>Contacto matriz productiva–biodiversidad (m/Ha)</h4><div class="bal-chart-wrap"><canvas id="balance-chart-contacto"></canvas></div></div>
+      </div>
+
+      <div class="bal-table-card">
+        <h4 style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700;margin-bottom:10px">Detalle por establecimiento</h4>
+        <table class="bal-table" id="balance-table">
+          <thead><tr><th>Establecimiento</th><th>Cliente</th><th class="num">Sup. Total (Ha)</th><th class="num">Nat. (Ha)</th><th class="num">Nat. (%)</th></tr></thead>
+          <tbody><tr><td colspan="5" style="color:var(--muted);font-size:12px">Cargando…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
   </div><!-- /map-area -->
@@ -856,7 +956,7 @@ var hasPanel = {
   'paisaje-ini':true, 'analisis':true, 'potencial':true,
   'multifuncional':true, 'restaurar':true,
   'impacto-nat':false, 'impacto-prod':true,
-  'implementacion':true, 'perfil':false
+  'implementacion':true, 'perfil':false, 'balance':false
 };
 
 var isMapSec = {
@@ -864,7 +964,7 @@ var isMapSec = {
   'paisaje-ini':true, 'analisis':true, 'potencial':true,
   'multifuncional':true, 'restaurar':true,
   'impacto-nat':false, 'impacto-prod':true,
-  'implementacion':false, 'perfil':false
+  'implementacion':false, 'perfil':false, 'balance':false
 };
 
 var mapCenter = [0, 0];
@@ -1031,6 +1131,7 @@ function activateSec(id) {
     titleEl.style.display    = 'none';
     badgeEl.style.display    = 'none';
     document.getElementById('full-' + id).classList.add('active');
+    if (id === 'balance') { showBalance(); return; }
     initChartsForSec(id);
     return;
   }
@@ -1725,6 +1826,12 @@ function initChartsForSec(id) {
     if (emailEl && currentUser) emailEl.textContent = currentUser.email || '—';
     var msgEl = document.getElementById('perfil-msg');
     if (msgEl) { msgEl.className = 'perfil-msg'; }
+    /* Panel de puntos del mapa: todos los admins */
+    if (currentProfile && currentProfile.rol === 'admin') {
+      document.getElementById('admin-puntos-panel').style.display = 'block';
+      loadPuntos();
+    }
+    /* Gestión de usuarios: sólo superadmin */
     if (currentUser && currentUser.email === 'profmiguelmussi@gmail.com') {
       document.getElementById('admin-panel').style.display = 'block';
       loadUsuarios();
@@ -1828,6 +1935,12 @@ async function afterLogin(session) {
     .eq('id', currentUser.id).single();
   if (res1.error) throw res1.error;
   currentProfile = res1.data;
+
+  /* Sección Balance: visible sólo para admins */
+  if (currentProfile && currentProfile.rol === 'admin') {
+    var _nb = document.getElementById('nav-balance');
+    if (_nb) _nb.style.display = 'flex';
+  }
 
   var res2 = await _sb.from('campos')
     .select('id, nombre, provincia, clientes(nombre)')
@@ -2206,6 +2319,380 @@ async function saveUser(userId) {
     btnEl.classList.add('saved');
     setTimeout(function(){ btnEl.textContent = 'Guardar'; btnEl.classList.remove('saved'); btnEl.disabled = false; }, 2000);
   }
+}
+
+/* == Balance: vista agregada de la cartera (admin) == */
+var balanceData = null;   // campos con métricas derivadas (KPIs/charts/tabla)
+var puntosData  = null;   // puntos del mapa (tabla mapa_puntos) — NO afectan KPIs
+var balanceMap  = null;   // instancia Leaflet
+
+function _fmt(n) { return (n || 0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function _short(s) { s = s || ''; return s.length > 13 ? s.slice(0, 12) + '…' : s; }
+function _sumUnidades(pi) {
+  var u = (pi && pi.unidades) || [];
+  return u.reduce(function(a, x) { return a + (x.ha || 0); }, 0);
+}
+function _campoMetrics(c) {
+  var inat = c.impacto_naturaleza || {};
+  var nt   = inat.naturaleza_total || {};
+  var iprod = c.impacto_produccion || {};
+  var a200  = iprod.area_prod_200m || {};
+  var db    = iprod.densidad_borde || {};
+  var rest  = c.restaurar || {};
+  return {
+    id: c.id, nombre: c.nombre,
+    cliente: (c.clientes && c.clientes.nombre) ? c.clientes.nombre : '—',
+    lat: c.lat, lng: c.lng,
+    supTotal:  _sumUnidades(c.paisaje_inicial),
+    natIni:    nt.inicial || 0,
+    natDis:    nt.disenio || 0,
+    natPct:    inat.naturaleza_disenio_pct || 0,
+    natIniPct: inat.naturaleza_actual_pct || 0,
+    rest:      rest.total_ha || 0,
+    area200:   a200.disenio || 0,
+    contacto:  db.disenio || 0
+  };
+}
+
+async function loadBalance() {
+  var r = await _sb.from('campos')
+    .select('id,nombre,lat,lng,paisaje_inicial,impacto_naturaleza,impacto_produccion,restaurar,clientes(nombre)')
+    .order('nombre');
+  if (r.error) {
+    console.error('Balance:', r.error);
+    var tb = document.querySelector('#balance-table tbody');
+    if (tb) tb.innerHTML = '<tr><td colspan="5" style="color:#dc2626;font-size:12px">Error: ' + r.error.message + '</td></tr>';
+    return;
+  }
+  balanceData = (r.data || []).map(_campoMetrics);
+  renderBalanceKpis(balanceData);
+  renderBalanceCharts(balanceData);
+  renderBalanceTable(balanceData);
+  await loadPuntosData();          // marcadores del mapa (independientes de los KPIs)
+  initBalanceMap(puntosData || []);
+}
+
+function renderBalanceKpis(m) {
+  var total = m.reduce(function(a,x){return a+x.supTotal;},0);
+  var nat   = m.reduce(function(a,x){return a+x.natDis;},0);
+  var rest  = m.reduce(function(a,x){return a+x.rest;},0);
+  var a200  = m.reduce(function(a,x){return a+x.area200;},0);
+  document.getElementById('bal-kpi-total').textContent = _fmt(total);
+  document.getElementById('bal-kpi-nat').textContent   = _fmt(nat);
+  document.getElementById('bal-kpi-rest').textContent  = _fmt(rest);
+  document.getElementById('bal-kpi-200m').textContent  = _fmt(a200);
+  document.getElementById('bal-kpi-estab').textContent = m.length;
+}
+
+function renderBalanceCharts(m) {
+  var byNat = m.slice().sort(function(a,b){return b.natDis - a.natDis;});
+  var byCon = m.slice().sort(function(a,b){return b.contacto - a.contacto;});
+  var ACC = '#5aab28', HDR = '#2a5218', GOLD = '#c0961e', GOLD2 = '#c8a030', NATINI = '#b9cda6';
+  var tickShort = { callback: function(v){ return _short(this.getLabelForValue(v)); }, font:{size:8}, autoSkip:false };
+
+  /* 1 — Naturaleza Total (Ha) por campo (barras horizontales) */
+  if (chartReg['balance-chart-nattotal']) chartReg['balance-chart-nattotal'].destroy();
+  chartReg['balance-chart-nattotal'] = new Chart(document.getElementById('balance-chart-nattotal'), {
+    type:'bar',
+    data:{ labels: byNat.map(function(x){return x.nombre;}),
+           datasets:[{ data: byNat.map(function(x){return x.natDis;}), backgroundColor: ACC, borderWidth:0 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return ' '+_fmt(c.raw)+' Ha';}}} },
+      scales:{ x:{ ticks:{font:{size:8}}, grid:{color:'rgba(0,0,0,.05)'} },
+               y:{ ticks:tickShort, grid:{display:false} } } }
+  });
+
+  /* 2 — combo: Naturaleza Inicial vs Diseño (Ha) + Naturaleza (%) */
+  if (chartReg['balance-chart-natpct']) chartReg['balance-chart-natpct'].destroy();
+  chartReg['balance-chart-natpct'] = new Chart(document.getElementById('balance-chart-natpct'), {
+    data:{ labels: byNat.map(function(x){return x.nombre;}),
+      datasets:[
+        { type:'bar', label:'Nat. Inicial (Ha)', data: byNat.map(function(x){return x.natIni;}), backgroundColor:NATINI, borderWidth:0, yAxisID:'y' },
+        { type:'bar', label:'Nat. Diseño (Ha)',  data: byNat.map(function(x){return x.natDis;}), backgroundColor:ACC,    borderWidth:0, yAxisID:'y' },
+        { type:'line', label:'Naturaleza (%)',    data: byNat.map(function(x){return x.natPct;}), borderColor:GOLD, backgroundColor:GOLD, borderWidth:2, pointRadius:2, tension:.35, yAxisID:'y1' }
+      ] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{font:{size:9}, boxWidth:10, padding:6}} },
+      scales:{ x:{ ticks:tickShort, grid:{display:false} },
+               y:{ position:'left', title:{display:true,text:'Ha',font:{size:9}}, ticks:{font:{size:8}}, grid:{color:'rgba(0,0,0,.05)'} },
+               y1:{ position:'right', title:{display:true,text:'%',font:{size:9}}, ticks:{font:{size:8}}, grid:{drawOnChartArea:false} } } }
+  });
+
+  /* 3 — Naturaleza inicial (%) vs diseño (%) (barras agrupadas) */
+  if (chartReg['balance-chart-inivsdis']) chartReg['balance-chart-inivsdis'].destroy();
+  chartReg['balance-chart-inivsdis'] = new Chart(document.getElementById('balance-chart-inivsdis'), {
+    type:'bar',
+    data:{ labels: byNat.map(function(x){return x.nombre;}),
+      datasets:[
+        { label:'Inicial (%)', data: byNat.map(function(x){return x.natIniPct;}), backgroundColor:GOLD2, borderWidth:0 },
+        { label:'Diseño (%)',  data: byNat.map(function(x){return x.natPct;}),    backgroundColor:HDR,   borderWidth:0 }
+      ] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{font:{size:9}, boxWidth:10, padding:6}},
+        tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': '+(c.raw||0).toFixed(2)+'%';}}} },
+      scales:{ x:{ ticks:tickShort, grid:{display:false} },
+               y:{ ticks:{font:{size:8}}, grid:{color:'rgba(0,0,0,.05)'} } } }
+  });
+
+  /* 4 — Contacto matriz productiva–biodiversidad (m/Ha) */
+  if (chartReg['balance-chart-contacto']) chartReg['balance-chart-contacto'].destroy();
+  chartReg['balance-chart-contacto'] = new Chart(document.getElementById('balance-chart-contacto'), {
+    type:'bar',
+    data:{ labels: byCon.map(function(x){return x.nombre;}),
+           datasets:[{ data: byCon.map(function(x){return x.contacto;}), backgroundColor: HDR, borderWidth:0 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return ' '+(c.raw||0).toFixed(2)+' m/Ha';}}} },
+      scales:{ x:{ ticks:{font:{size:8}}, grid:{color:'rgba(0,0,0,.05)'} },
+               y:{ ticks:tickShort, grid:{display:false} } } }
+  });
+}
+
+function renderBalanceTable(m) {
+  var tb = document.querySelector('#balance-table tbody');
+  if (!tb) return;
+  var rows = m.slice().sort(function(a,b){return b.supTotal - a.supTotal;});
+  tb.innerHTML = rows.map(function(x){
+    return '<tr><td>'+x.nombre+'</td><td style="color:var(--muted)">'+x.cliente+'</td>'
+      + '<td class="num">'+_fmt(x.supTotal)+'</td>'
+      + '<td class="num">'+_fmt(x.natDis)+'</td>'
+      + '<td class="num">'+(x.natPct||0).toFixed(2)+'</td></tr>';
+  }).join('');
+  var totSup = m.reduce(function(a,x){return a+x.supTotal;},0);
+  var totNat = m.reduce(function(a,x){return a+x.natDis;},0);
+  var totPct = totSup > 0 ? (totNat/totSup*100) : 0;
+  var tf = document.querySelector('#balance-table tfoot');
+  var foot = '<tr><td>Total</td><td></td><td class="num">'+_fmt(totSup)+'</td><td class="num">'+_fmt(totNat)+'</td><td class="num">'+totPct.toFixed(2)+'</td></tr>';
+  if (tf) tf.innerHTML = foot;
+  else document.getElementById('balance-table').insertAdjacentHTML('beforeend', '<tfoot>'+foot+'</tfoot>');
+}
+
+function initBalanceMap(m) {
+  if (balanceMap) { balanceMap.remove(); balanceMap = null; }
+  balanceMap = L.map('balance-map', { scrollWheelZoom:true, worldCopyJump:true, zoomControl:true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© OpenStreetMap, © CARTO', subdomains:'abcd', maxZoom:19
+  }).addTo(balanceMap);
+
+  var pin = L.divIcon({ className:'', html:'<div class="bal-pin"></div>', iconSize:[18,18], iconAnchor:[9,17], popupAnchor:[0,-16] });
+  var pts = [];
+  (m || []).forEach(function(x){
+    var lat = parseFloat(x.lat), lng = parseFloat(x.lng);
+    if (isNaN(lat) || isNaN(lng)) return;
+    var html = '<div class="bal-pop-name">'+(x.nombre||'')+'</div>'
+      + (x.cliente ? '<div class="bal-pop-cli">'+x.cliente+'</div>' : '')
+      + '<div class="bal-pop-row"><span>Ha. totales</span><span>'+_fmt(x.ha_total)+'</span></div>'
+      + '<div class="bal-pop-row"><span>Ha. naturaleza</span><span>'+_fmt(x.ha_naturaleza)+'</span></div>';
+    L.marker([lat, lng], {icon:pin}).addTo(balanceMap).bindPopup(html);
+    pts.push([lat, lng]);
+  });
+
+  if (pts.length >= 2)      balanceMap.fitBounds(pts, {padding:[40,40], maxZoom:11});
+  else if (pts.length === 1) balanceMap.setView(pts[0], 9);
+  else                       balanceMap.setView([-38, -63], 4);  // Argentina por defecto
+
+  setTimeout(function(){ if (balanceMap) balanceMap.invalidateSize(); }, 80);
+}
+
+var puntosDirty = false;   // los puntos se editaron y el mapa debe reconstruirse
+function showBalance() {
+  if (!balanceData) { loadBalance(); return; }
+  if (puntosDirty) { puntosDirty = false; initBalanceMap(puntosData || []); return; }
+  setTimeout(function(){ if (balanceMap) balanceMap.invalidateSize(); }, 60);
+}
+
+/* Al cambiar el tamaño de ventana: invalidar el mapa (alto en vh) y re-renderizar
+   los charts (Chart.js no reduce el canvas de instancias ya creadas de forma fiable
+   dentro de grids, pero sí dimensiona bien al recrearse contra el contenedor actual). */
+var _balResizeTO = null;
+window.addEventListener('resize', function() {
+  if (currentSec !== 'balance' || !balanceData) return;
+  clearTimeout(_balResizeTO);
+  _balResizeTO = setTimeout(function() {
+    if (balanceMap) balanceMap.invalidateSize();
+    renderBalanceCharts(balanceData);
+  }, 180);
+});
+
+/* == Admin: puntos del mapa (todos los admins) == */
+function _puntoFromCampo(c) {
+  return { campo_id:c.id, nombre:c.nombre, cliente:c.cliente,
+           lat:c.lat, lng:c.lng, ha_total:c.supTotal, ha_naturaleza:c.natDis };
+}
+async function _fetchCamposMetrics() {
+  if (balanceData) return balanceData;
+  var r = await _sb.from('campos')
+    .select('id,nombre,lat,lng,paisaje_inicial,impacto_naturaleza,impacto_produccion,restaurar,clientes(nombre)')
+    .order('nombre');
+  if (r.error) { console.error('Campos:', r.error); return []; }
+  return (r.data || []).map(_campoMetrics);
+}
+
+/* Carga los puntos; si la tabla está vacía, auto-importa los campos una vez */
+async function loadPuntosData() {
+  var r = await _sb.from('mapa_puntos')
+    .select('id,campo_id,nombre,cliente,lat,lng,ha_total,ha_naturaleza').order('nombre');
+  if (r.error) { console.error('Puntos:', r.error); if (!puntosData) puntosData = []; return; }
+  var rows = r.data || [];
+  if (rows.length === 0) {
+    var camp = await _fetchCamposMetrics();
+    var toIns = camp.map(_puntoFromCampo);
+    if (toIns.length) {
+      var ins = await _sb.from('mapa_puntos').insert(toIns)
+        .select('id,campo_id,nombre,cliente,lat,lng,ha_total,ha_naturaleza');
+      if (!ins.error) rows = ins.data || [];
+      else console.error('Auto-import puntos:', ins.error);
+    }
+  }
+  puntosData = rows;
+}
+
+async function loadPuntos() {
+  var el = document.getElementById('admin-puntos-table');
+  if (el) el.innerHTML = '<p style="color:var(--muted);font-size:12px">Cargando...</p>';
+  await loadPuntosData();
+  renderPuntosTable(puntosData || []);
+}
+
+function renderPuntosTable(rows) {
+  var el = document.getElementById('admin-puntos-table');
+  if (!el) return;
+  if (!rows.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:12px">No hay puntos. Usá “Agregar punto” o “Importar campos faltantes”.</p>';
+    return;
+  }
+  var body = rows.map(function(p){
+    var origen = p.campo_id ? '<span class="punto-origen campo">Campo</span>' : '<span class="punto-origen libre">Manual</span>';
+    var coord = (typeof p.lat === 'number' && typeof p.lng === 'number')
+      ? (p.lat.toFixed(4)+', '+p.lng.toFixed(4))
+      : '<span style="color:var(--red)">sin ubicar</span>';
+    return '<tr>'
+      + '<td style="font-size:11px"><div style="font-weight:700;color:var(--text)">'+(p.nombre||'')+'</div>'+origen+'</td>'
+      + '<td style="font-size:11px;color:var(--muted)">'+(p.cliente||'—')+'</td>'
+      + '<td style="font-size:11px">'+coord+'</td>'
+      + '<td style="font-size:11px" class="num">'+_fmt(p.ha_total)+' / '+_fmt(p.ha_naturaleza)+'</td>'
+      + '<td style="white-space:nowrap"><button class="admin-save-btn" onclick="openPuntoForm(\''+p.id+'\')">Editar</button> '
+      + '<button class="admin-del-btn" onclick="deletePunto(\''+p.id+'\')" title="Eliminar">✕</button></td>'
+      + '</tr>';
+  }).join('');
+  el.innerHTML = '<table class="admin-table" style="table-layout:auto">'
+    + '<thead><tr><th>Punto</th><th>Cliente/Proyecto</th><th>Lat, Lng</th><th>Ha tot / nat</th><th></th></tr></thead>'
+    + '<tbody>'+body+'</tbody></table>';
+}
+
+/* ── Formulario alta/edición + mini-mapa señalador ── */
+var _pickMap = null, _pickMarker = null, _pickSynced = false;
+
+function openPuntoForm(id) {
+  var f = document.getElementById('punto-form');
+  f.style.display = 'block';
+  var p = id ? (puntosData || []).find(function(x){ return x.id === id; }) : null;
+  document.getElementById('punto-id').value      = p ? p.id : '';
+  document.getElementById('punto-nombre').value  = p ? (p.nombre || '') : '';
+  document.getElementById('punto-cliente').value = p ? (p.cliente || '') : '';
+  document.getElementById('punto-lat').value     = (p && p.lat != null) ? p.lat : '';
+  document.getElementById('punto-lng').value     = (p && p.lng != null) ? p.lng : '';
+  document.getElementById('punto-hatotal').value = (p && p.ha_total != null) ? p.ha_total : '';
+  document.getElementById('punto-hanat').value   = (p && p.ha_naturaleza != null) ? p.ha_naturaleza : '';
+  var btn = document.getElementById('punto-save-btn'); btn.textContent = 'Guardar'; btn.style.background = '';
+  var lat = (p && p.lat != null) ? parseFloat(p.lat) : null;
+  var lng = (p && p.lng != null) ? parseFloat(p.lng) : null;
+  initPickMap(lat, lng);
+  f.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function closePuntoForm() { document.getElementById('punto-form').style.display = 'none'; }
+
+function initPickMap(lat, lng) {
+  var has = (lat != null && lng != null && !isNaN(lat) && !isNaN(lng));
+  if (!_pickMap) {
+    _pickMap = L.map('punto-pick-map', { scrollWheelZoom:true });
+    mkSat().addTo(_pickMap);   // capa satelital (Esri) para ubicar campos a ojo
+    _pickMap.on('click', function(e){ setPickMarker(e.latlng.lat, e.latlng.lng); });
+  }
+  if (!_pickSynced) {
+    _pickSynced = true;
+    ['punto-lat','punto-lng'].forEach(function(fid){
+      document.getElementById(fid).addEventListener('change', function(){
+        var la = parseFloat(document.getElementById('punto-lat').value);
+        var ln = parseFloat(document.getElementById('punto-lng').value);
+        if (!isNaN(la) && !isNaN(ln) && _pickMap) { setPickMarker(la, ln); _pickMap.setView([la,ln], Math.max(_pickMap.getZoom(), 8)); }
+      });
+    });
+  }
+  _pickMap.setView(has ? [lat,lng] : [-38,-63], has ? 9 : 4);
+  if (has) setPickMarker(lat, lng);
+  else if (_pickMarker) { _pickMap.removeLayer(_pickMarker); _pickMarker = null; }
+  setTimeout(function(){ if (_pickMap) _pickMap.invalidateSize(); }, 80);
+}
+function setPickMarker(lat, lng) {
+  var pin = L.divIcon({ className:'', html:'<div class="bal-pin"></div>', iconSize:[18,18], iconAnchor:[9,17] });
+  if (!_pickMarker) {
+    _pickMarker = L.marker([lat,lng], { icon:pin, draggable:true }).addTo(_pickMap);
+    _pickMarker.on('dragend', function(e){
+      var ll = e.target.getLatLng();
+      document.getElementById('punto-lat').value = ll.lat.toFixed(6);
+      document.getElementById('punto-lng').value = ll.lng.toFixed(6);
+    });
+  } else { _pickMarker.setLatLng([lat,lng]); }
+  document.getElementById('punto-lat').value = (+lat).toFixed(6);
+  document.getElementById('punto-lng').value = (+lng).toFixed(6);
+}
+
+function _puntoErr(btn, msg) {
+  btn.textContent = msg; btn.style.background = '#dc2626';
+  setTimeout(function(){ btn.textContent='Guardar'; btn.style.background=''; btn.disabled=false; }, 2200);
+}
+
+async function savePunto() {
+  var id      = document.getElementById('punto-id').value;
+  var nombre  = document.getElementById('punto-nombre').value.trim();
+  var cliente = document.getElementById('punto-cliente').value.trim() || null;
+  var latV = document.getElementById('punto-lat').value;
+  var lngV = document.getElementById('punto-lng').value;
+  var htV  = document.getElementById('punto-hatotal').value;
+  var hnV  = document.getElementById('punto-hanat').value;
+  var btn  = document.getElementById('punto-save-btn');
+  if (!nombre) { _puntoErr(btn, 'Falta nombre'); return; }
+  var lat = latV === '' ? null : parseFloat(latV);
+  var lng = lngV === '' ? null : parseFloat(lngV);
+  if ((lat != null && (isNaN(lat) || lat < -90 || lat > 90)) ||
+      (lng != null && (isNaN(lng) || lng < -180 || lng > 180))) { _puntoErr(btn, 'Coord. inválida'); return; }
+  var rec = { nombre:nombre, cliente:cliente, lat:lat, lng:lng,
+              ha_total:      htV === '' ? null : parseFloat(htV),
+              ha_naturaleza: hnV === '' ? null : parseFloat(hnV) };
+  btn.disabled = true; btn.textContent = '...';
+  var r = id ? await _sb.from('mapa_puntos').update(rec).eq('id', id)
+             : await _sb.from('mapa_puntos').insert(rec);
+  if (r.error) { console.error('Guardar punto:', r.error); _puntoErr(btn, 'Error'); return; }
+  btn.disabled = false; btn.textContent = 'Guardar';
+  closePuntoForm();
+  puntosDirty = true;
+  await loadPuntos();
+  if (currentSec === 'balance') initBalanceMap(puntosData || []);
+}
+
+async function deletePunto(id) {
+  if (!window.confirm('¿Eliminar este punto del mapa?')) return;
+  var r = await _sb.from('mapa_puntos').delete().eq('id', id);
+  if (r.error) { console.error('Eliminar punto:', r.error); window.alert('Error al eliminar: '+r.error.message); return; }
+  puntosDirty = true;
+  await loadPuntos();
+  if (currentSec === 'balance') initBalanceMap(puntosData || []);
+}
+
+async function importarCampos() {
+  await loadPuntosData();
+  var existing = {};
+  (puntosData || []).forEach(function(p){ if (p.campo_id) existing[p.campo_id] = true; });
+  var camp = await _fetchCamposMetrics();
+  var toIns = camp.filter(function(c){ return !existing[c.id]; }).map(_puntoFromCampo);
+  if (!toIns.length) { window.alert('No hay campos nuevos para importar.'); return; }
+  var r = await _sb.from('mapa_puntos').insert(toIns);
+  if (r.error) { console.error('Importar campos:', r.error); window.alert('Error al importar: '+r.error.message); return; }
+  puntosDirty = true;
+  await loadPuntos();
+  if (currentSec === 'balance') initBalanceMap(puntosData || []);
 }
 
 /* == Logout == */
