@@ -441,17 +441,22 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 #admin-panel { display:none; width:100%; max-width:760px; }
 .admin-card { max-width:760px !important; }
 .admin-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; table-layout:fixed; }
-.admin-table th { text-align:left; padding:8px 8px; background:var(--bg); color:var(--muted); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; border-bottom:1px solid var(--border); }
+.admin-table th { text-align:center; padding:8px 8px; background:var(--bg); color:var(--muted); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.admin-table th:hover { color:var(--acc); }
 .admin-table td { padding:9px 8px; border-bottom:1px solid var(--border); vertical-align:middle; overflow:hidden; }
 .admin-table tr:last-child td { border-bottom:none; }
-.admin-table th:nth-child(1),.admin-table td:nth-child(1) { width:24%; }
-.admin-table th:nth-child(2),.admin-table td:nth-child(2) { width:22%; }
-.admin-table th:nth-child(3),.admin-table td:nth-child(3) { width:14%; }
-.admin-table th:nth-child(4),.admin-table td:nth-child(4) { width:24%; }
-.admin-table th:nth-child(5),.admin-table td:nth-child(5) { width:16%; }
+.admin-table th:nth-child(1),.admin-table td:nth-child(1) { width:19%; }
+.admin-table th:nth-child(2),.admin-table td:nth-child(2) { width:15%; }
+.admin-table th:nth-child(3),.admin-table td:nth-child(3) { width:13%; }
+.admin-table th:nth-child(4),.admin-table td:nth-child(4) { width:20%; }
+.admin-table th:nth-child(5),.admin-table td:nth-child(5) { width:13%; }
+.admin-table th:nth-child(6),.admin-table td:nth-child(6) { width:9%; }
+.admin-table th:nth-child(7),.admin-table td:nth-child(7) { width:11%; }
 .admin-table td:nth-child(1) div { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.admin-table td:last-child { text-align:right; }
 .admin-select { padding:5px 6px; border:1.5px solid var(--border); border-radius:6px; font-size:12px; color:var(--text); background:#fff; cursor:pointer; width:100%; box-sizing:border-box; }
-.admin-save-btn { padding:5px 12px; border:none; border-radius:6px; background:var(--hdr); color:#fff; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
+select.admin-select { padding-right:20px; }
+.admin-save-btn { padding:5px 10px; border:none; border-radius:6px; background:var(--hdr); color:#fff; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
 .admin-save-btn:hover { background:var(--acc); }
 .admin-save-btn.saved { background:#15803d; }
 .admin-reload-btn { padding:6px 14px; border:1.5px solid var(--border); border-radius:7px; background:#fff; color:var(--text); font-size:11px; font-weight:700; cursor:pointer; margin-bottom:14px; }
@@ -680,7 +685,7 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
           <img id="home-hero-img" src="" alt=""
                onerror="this.style.display='none'"/>
           <div class="home-hero-overlay"></div>
-          <div class="home-hero-badge" id="home-eco-badge">Ecorreg. Pampa</div>
+          <div class="home-hero-badge" id="home-eco-badge">Monte Hermoso</div>
         </div>
         <div class="home-content">
           <div>
@@ -1946,7 +1951,7 @@ document.addEventListener('keydown', function(e) {
 async function afterLogin(session) {
   currentUser = session.user;
 
-  var res1 = await _sb.from('profiles').select('rol, cliente_id')
+  var res1 = await _sb.from('profiles').select('rol, cliente_id, sesiones_count')
     .eq('id', currentUser.id).single();
   if (res1.error) throw res1.error;
   currentProfile = res1.data;
@@ -1979,6 +1984,8 @@ async function afterLogin(session) {
   var _nombre = _meta.full_name || _meta.name || null;
   var _upd = {email: currentUser.email};
   if (_nombre) _upd.nombre = _nombre;
+  _upd.ultimo_login   = new Date().toISOString();
+  _upd.sesiones_count = (currentProfile.sesiones_count || 0) + 1;
   await _sb.from('profiles').update(_upd).eq('id', currentUser.id);
 
   document.getElementById('login-overlay').classList.add('hidden');
@@ -2133,12 +2140,12 @@ function refreshFullSecs() {
   var imgEl = document.getElementById('home-hero-img');
   if (imgEl) { imgEl.src = C.portada_img_url || ''; imgEl.style.display = C.portada_img_url ? '' : 'none'; }
   var set = function(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; };
-  set('home-eco-badge',   'Ecorreg. ' + (C.ecorregion.nombre || ''));
+  set('home-eco-badge',   C.campo || '');
   set('home-eyebrow',     'Customer Report  ·  ' + (C.fecha || '2026'));
   set('home-client-name', C.nombre_cliente || '');
   set('home-campo-name',  'Campo ' + (C.campo || ''));
   set('home-meta-prov',   C.provincia || '');
-  set('home-meta-eco',    C.ecorregion.nombre || '');
+  set('home-meta-eco',    'Ecorregión ' + (C.ecorregion.nombre || ''));
 
   var totalHa = (C.paisaje_inicial.unidades || []).reduce(function(s, u) { return s + u.ha; }, 0);
   var natItem = (C.multifuncional.totales || []).find(function(t) { return t.label === 'Naturaleza'; });
@@ -2258,19 +2265,71 @@ async function doChangePassword() {
 
 /* == Admin: gestión de usuarios == */
 var _allClientes = [];
+var _adminUsuarios       = [];   // último dataset traído de profiles (sin ordenar)
+var _adminSortCol        = null; // 'usuario'|'nombre'|'rol'|'cliente'|'login'|'sesiones'
+var _adminSortDir        = 1;    // 1 asc, -1 desc
+var _adminSortDefaultDir = { usuario:1, nombre:1, rol:1, cliente:1, login:-1, sesiones:-1 };
 
 async function loadUsuarios() {
   var tableEl = document.getElementById('admin-users-table');
   if (!tableEl) return;
   tableEl.innerHTML = '<p style="color:var(--muted);font-size:12px">Cargando...</p>';
 
-  var r1 = await _sb.from('profiles').select('id, email, nombre, rol, cliente_id').order('rol');
+  var r1 = await _sb.from('profiles').select('id, email, nombre, rol, cliente_id, ultimo_login, sesiones_count').order('rol');
   if (r1.error) { tableEl.innerHTML = '<p style="color:#dc2626;font-size:12px">Error: '+r1.error.message+'</p>'; return; }
 
   var r2 = await _sb.from('clientes').select('id, nombre').order('nombre');
   _allClientes = r2.data || [];
 
-  renderAdminTable(r1.data || []);
+  _adminUsuarios = r1.data || [];
+  var toRender = _adminSortCol
+    ? _adminUsuarios.slice().sort(function(a,b){ return _adminCompare(a,b,_adminSortCol,_adminSortDir); })
+    : _adminUsuarios;
+  renderAdminTable(toRender);
+}
+
+function _clienteNombre(id) {
+  var c = _allClientes.find(function(x){ return x.id === id; });
+  return c ? c.nombre : '';
+}
+
+function _adminCompare(a, b, col, dir) {
+  function s(v){ return (v||'').toString().toLowerCase(); }
+  if (col === 'login') {
+    if (!a.ultimo_login && !b.ultimo_login) return 0;
+    if (!a.ultimo_login) return 1;   // sin login siempre al final, cualquiera sea la dirección
+    if (!b.ultimo_login) return -1;
+    return dir * (new Date(a.ultimo_login) - new Date(b.ultimo_login));
+  }
+  var val;
+  switch (col) {
+    case 'usuario':  val = s(a.nombre||a.email).localeCompare(s(b.nombre||b.email), 'es'); break;
+    case 'nombre':   val = s(a.nombre).localeCompare(s(b.nombre), 'es'); break;
+    case 'rol':      val = s(a.rol).localeCompare(s(b.rol), 'es'); break;
+    case 'cliente':  val = s(_clienteNombre(a.cliente_id)).localeCompare(s(_clienteNombre(b.cliente_id)), 'es'); break;
+    case 'sesiones': val = (a.sesiones_count||0) - (b.sesiones_count||0); break;
+    default: val = 0;
+  }
+  return dir * val;
+}
+
+function sortAdminUsuarios(col) {
+  if (_adminSortCol === col) { _adminSortDir *= -1; }
+  else { _adminSortCol = col; _adminSortDir = _adminSortDefaultDir[col] || 1; }
+  var sorted = _adminUsuarios.slice().sort(function(a,b){ return _adminCompare(a,b,col,_adminSortDir); });
+  renderAdminTable(sorted);
+}
+
+function _fmtLogin(ts) {
+  if (!ts) return '—';
+  var d = new Date(ts);
+  return d.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'2-digit'})
+    + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', hour12:false});
+}
+
+function _adminTh(label, col) {
+  var arrow = _adminSortCol === col ? (_adminSortDir === 1 ? ' ▲' : ' ▼') : '';
+  return '<th onclick="sortAdminUsuarios(\''+col+'\')">'+label+arrow+'</th>';
 }
 
 function renderAdminTable(usuarios) {
@@ -2300,12 +2359,18 @@ function renderAdminTable(usuarios) {
       + '<td>'+nomInput+'</td>'
       + '<td>'+rolSel+'</td>'
       + '<td>'+cliSel+'</td>'
+      + '<td style="font-size:11px;white-space:nowrap">'+_fmtLogin(u.ultimo_login)+'</td>'
+      + '<td style="text-align:center">'+(u.sesiones_count||0)+'</td>'
       + '<td><button class="admin-save-btn" id="savebtn-'+u.id+'" onclick="saveUser(\''+u.id+'\')">Guardar</button></td>'
       + '</tr>';
   }).join('');
 
   tableEl.innerHTML = '<table class="admin-table">'
-    + '<thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Cliente</th><th></th></tr></thead>'
+    + '<thead><tr>'
+      + _adminTh('Usuario','usuario') + _adminTh('Nombre','nombre') + _adminTh('Rol','rol')
+      + _adminTh('Cliente','cliente') + _adminTh('Último acceso','login') + _adminTh('Sesiones','sesiones')
+      + '<th></th>'
+    + '</tr></thead>'
     + '<tbody>'+rows+'</tbody></table>';
 }
 
@@ -2330,6 +2395,12 @@ async function saveUser(userId) {
     btnEl.style.background = '#dc2626';
     setTimeout(function(){ btnEl.textContent = 'Guardar'; btnEl.style.background = ''; btnEl.disabled = false; }, 2500);
   } else {
+    var cached = _adminUsuarios.find(function(u){ return u.id === userId; });
+    if (cached) {
+      cached.nombre     = nomEl ? (nomEl.value.trim() || null) : cached.nombre;
+      cached.rol        = rolEl.value;
+      cached.cliente_id = cliEl.value || null;
+    }
     btnEl.textContent = '✓ Guardado';
     btnEl.classList.add('saved');
     setTimeout(function(){ btnEl.textContent = 'Guardar'; btnEl.classList.remove('saved'); btnEl.disabled = false; }, 2000);
