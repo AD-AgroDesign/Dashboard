@@ -2638,7 +2638,46 @@ async function loadPuntos() {
   var el = document.getElementById('admin-puntos-table');
   if (el) el.innerHTML = '<p style="color:var(--muted);font-size:12px">Cargando...</p>';
   await loadPuntosData();
-  renderPuntosTable(puntosData || []);
+  var toRender = _puntosSortCol
+    ? (puntosData || []).slice().sort(function(a,b){ return _puntosCompare(a,b,_puntosSortCol,_puntosSortDir); })
+    : (puntosData || []);
+  renderPuntosTable(toRender);
+}
+
+var _puntosSortCol        = null; // 'punto'|'cliente'|'coord'|'ha'
+var _puntosSortDir        = 1;    // 1 asc, -1 desc
+var _puntosSortDefaultDir = { punto:1, cliente:1, coord:1, ha:-1 };
+
+function _puntosCompare(a, b, col, dir) {
+  function s(v){ return (v||'').toString().toLowerCase(); }
+  if (col === 'coord') {
+    var av = (typeof a.lat === 'number') ? a.lat : null;
+    var bv = (typeof b.lat === 'number') ? b.lat : null;
+    if (av===null && bv===null) return 0;
+    if (av===null) return 1;   // sin ubicar siempre al final
+    if (bv===null) return -1;
+    return dir * (av - bv);
+  }
+  var val;
+  switch (col) {
+    case 'punto':   val = s(a.nombre).localeCompare(s(b.nombre), 'es'); break;
+    case 'cliente': val = s(a.cliente).localeCompare(s(b.cliente), 'es'); break;
+    case 'ha':      val = (a.ha_total||0) - (b.ha_total||0); break;
+    default: val = 0;
+  }
+  return dir * val;
+}
+
+function sortPuntos(col) {
+  if (_puntosSortCol === col) { _puntosSortDir *= -1; }
+  else { _puntosSortCol = col; _puntosSortDir = _puntosSortDefaultDir[col] || 1; }
+  var sorted = (puntosData || []).slice().sort(function(a,b){ return _puntosCompare(a,b,col,_puntosSortDir); });
+  renderPuntosTable(sorted);
+}
+
+function _puntosTh(label, col) {
+  var arrow = _puntosSortCol === col ? (_puntosSortDir === 1 ? ' ▲' : ' ▼') : '';
+  return '<th onclick="sortPuntos(\''+col+'\')">'+label+arrow+'</th>';
 }
 
 function renderPuntosTable(rows) {
@@ -2663,7 +2702,11 @@ function renderPuntosTable(rows) {
       + '</tr>';
   }).join('');
   el.innerHTML = '<table class="admin-table" style="table-layout:auto">'
-    + '<thead><tr><th>Punto</th><th>Cliente/Proyecto</th><th>Lat, Lng</th><th>Ha tot / nat</th><th></th></tr></thead>'
+    + '<thead><tr>'
+      + _puntosTh('Punto','punto') + _puntosTh('Cliente/Proyecto','cliente')
+      + _puntosTh('Lat / Lon','coord') + _puntosTh('Ha tot / nat','ha')
+      + '<th></th>'
+    + '</tr></thead>'
     + '<tbody>'+body+'</tbody></table>';
 }
 
