@@ -1261,7 +1261,7 @@ function initLayersForSec(id) {
           })
           .catch(function(e){ console.warn('GeoJSON analisis error:', lyr.id, e); });
       } else if (lyr.url_imagen) {
-        anOvs[lyr.id] = L.imageOverlay(lyr.url_imagen, BOUNDS, {opacity:0, interactive:false});
+        anOvs[lyr.id] = L.imageOverlay(lyr.url_imagen, lyr.bounds || BOUNDS, {opacity:0, interactive:false});
       }
     });
 
@@ -1316,7 +1316,7 @@ function initLayersForSec(id) {
         })
         .catch(function(e){ console.warn('GeoJSON sec error:', id, e); });
     } else if (capa.url_imagen) {
-      secSingleOv[id] = L.imageOverlay(capa.url_imagen, BOUNDS, {opacity:0.75, interactive:false});
+      secSingleOv[id] = L.imageOverlay(capa.url_imagen, capa.bounds || BOUNDS, {opacity:0.75, interactive:false});
     }
 
     /* Extra overlay: contornos sobre la sección restaurar */
@@ -1349,12 +1349,14 @@ function initMapsIP() {
   var _capaIni = _capas.filter(function(c){ return c.tipo === 'dist_ini'; })[0];
   var _capaDis = _capas.filter(function(c){ return c.tipo === 'dist_dis'; })[0];
   var _capaMf  = _capas.filter(function(c){ return c.tipo === 'paisaje_no_agr_mf'; })[0];
-  if (BOUNDS && _capaIni && _capaIni.url_imagen) {
-    ipOvIni = L.imageOverlay(_capaIni.url_imagen, BOUNDS, {opacity:0.75});
+  var _boundsIni = (_capaIni && _capaIni.bounds) || BOUNDS;
+  var _boundsDis = (_capaDis && _capaDis.bounds) || BOUNDS;
+  if (_boundsIni && _capaIni && _capaIni.url_imagen) {
+    ipOvIni = L.imageOverlay(_capaIni.url_imagen, _boundsIni, {opacity:0.75});
     ipOvIni.addTo(ipMapIni);
   }
-  if (BOUNDS && _capaDis && _capaDis.url_imagen) {
-    ipOvDis = L.imageOverlay(_capaDis.url_imagen, BOUNDS, {opacity:0.75});
+  if (_boundsDis && _capaDis && _capaDis.url_imagen) {
+    ipOvDis = L.imageOverlay(_capaDis.url_imagen, _boundsDis, {opacity:0.75});
     ipOvDis.addTo(ipMapDis);
   }
   if (_capaMf && _capaMf.url_geojson) {
@@ -2222,7 +2224,8 @@ function buildAnalisisCaps(capas) {
         tipo_layer:  c.tipo_layer,
         url_tiles:   c.url_tiles,
         url_geojson: c.url_geojson,
-        url_imagen:  c.url_imagen
+        url_imagen:  c.url_imagen,
+        bounds:      c.bounds
       };
     });
 }
