@@ -1183,7 +1183,7 @@ function activateSec(id) {
 
   /* Init map if first time */
   if (!theMap) {
-    theMap = L.map('the-map', {center:mapCenter, zoom:ZOOM});
+    theMap = L.map('the-map', {center:mapCenter, zoom:ZOOM, zoomSnap:0.25, zoomDelta:0.25, wheelPxPerZoomLevel:120});
     mkSat().addTo(theMap);
     theMap.on('mousemove', onMapMouseMove);
     theMap.on('mouseout',  onMapMouseOut);
@@ -1341,8 +1341,8 @@ function initLayersForSec(id) {
 
 /* ── Impacto Producción — dos mapas sincronizados ───── */
 function initMapsIP() {
-  ipMapIni = L.map('map-ip-ini', {center:mapCenter, zoom:ZOOM, zoomControl:true});
-  ipMapDis = L.map('map-ip-dis', {center:mapCenter, zoom:ZOOM, zoomControl:false});
+  ipMapIni = L.map('map-ip-ini', {center:mapCenter, zoom:ZOOM, zoomControl:true, zoomSnap:0.25, zoomDelta:0.25, wheelPxPerZoomLevel:120});
+  ipMapDis = L.map('map-ip-dis', {center:mapCenter, zoom:ZOOM, zoomControl:false, zoomSnap:0.25, zoomDelta:0.25, wheelPxPerZoomLevel:120});
   mkSat().addTo(ipMapIni);
   mkSat().addTo(ipMapDis);
   var _capas = C._capas_all || [];
@@ -2559,7 +2559,7 @@ function renderBalanceTable(m) {
 
 function initBalanceMap(m) {
   if (balanceMap) { balanceMap.remove(); balanceMap = null; }
-  balanceMap = L.map('balance-map', { scrollWheelZoom:true, worldCopyJump:true, zoomControl:true });
+  balanceMap = L.map('balance-map', { scrollWheelZoom:true, worldCopyJump:true, zoomControl:true, zoomSnap:0.25, zoomDelta:0.25, wheelPxPerZoomLevel:120 });
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution:'© OpenStreetMap, © CARTO', subdomains:'abcd', maxZoom:19
   }).addTo(balanceMap);
@@ -2738,7 +2738,7 @@ function closePuntoForm() { document.getElementById('punto-form').style.display 
 function initPickMap(lat, lng) {
   var has = (lat != null && lng != null && !isNaN(lat) && !isNaN(lng));
   if (!_pickMap) {
-    _pickMap = L.map('punto-pick-map', { scrollWheelZoom:true });
+    _pickMap = L.map('punto-pick-map', { scrollWheelZoom:true, zoomSnap:0.25, zoomDelta:0.25, wheelPxPerZoomLevel:120 });
     mkSat().addTo(_pickMap);   // capa satelital (Esri) para ubicar campos a ojo
     _pickMap.on('click', function(e){ setPickMarker(e.latlng.lat, e.latlng.lng); });
   }
