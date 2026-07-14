@@ -998,19 +998,19 @@ var ANALISIS_GRADIENTS = {
 /* ── GeoJSON styles ─────────────────────────────────── */
 var GEO_PAISAJE = {
   'ag-secano':'#5ab32e','ag-riego':'#4a9ed0',
-  'parche-le':'#1a5c0a','parche-herb':'#a0c96e',
-  'corredor-le':'#3a8c1a','corredor-herb':'#c8e08a',
-  'corr-le':'#3a8c1a','corr-herb':'#c8e08a',
+  'parche-le':'#ee6fc8','parche-herb':'#fb9a99',
+  'corredor-le':'#ee6fc8','corredor-herb':'#fb9a99',
+  'corr-le':'#ee6fc8','corr-herb':'#fb9a99',
   'camino':'#b0b0b0','instalaciones':'#b0b0b0',
-  'produccion':'#5ab32e','otros':'#c8b08a'
+  'produccion':'#5ab32e','otros':'#1f78b4'
 };
 var GEO_DISENO = {
-  'ag-secano-z1':'#5ab32e','ag-secano-z2':'#7aca50','ag-secano-z3':'#9ad060',
-  'zona1':'#5ab32e','zona2':'#7aca50','zona3':'#9ad060',
-  'ag-riego':'#4a9ed0','parche-le':'#1a5c0a','parche-herb':'#a0c96e',
-  'corr-le':'#3a8c1a','corr-herb':'#c8e08a',
+  'ag-secano-z1':'#33a02c','ag-secano-z2':'#4bc242','ag-secano-z3':'#b2df8a',
+  'zona1':'#33a02c','zona2':'#4bc242','zona3':'#b2df8a',
+  'ag-riego':'#4a9ed0','parche-le':'#ee6fc8','parche-herb':'#fb9a99',
+  'corr-le':'#ee6fc8','corr-herb':'#fb9a99',
   'camino':'#b0b0b0','instalaciones':'#b0b0b0',
-  'otros-parches':'#a0c96e'
+  'otros-parches':'#1f78b4'
 };
 var GEO_POTPROD = {1:'#2d8c1a',2:'#4fb32e',3:'#96cc42',4:'#c8db40',5:'#f0d830',6:'#e87020',7:'#d42020',8:'#909090'};
 var GEO_NO_AGR  = {'camino':'#000000','instalaciones':'#acacac','parche-le':'#d62edc','parche-herb':'#fb9a99','corredor-le':'#d62edc'};
@@ -1481,7 +1481,7 @@ function buildVizPanel(id) {
   } else if (id === 'multifuncional') {
     html += mkLayerFrame('multifuncional', 'Paisaje Multifuncional',
       'Propuesta de diseño del paisaje',
-      'linear-gradient(to right,#2d8c1a,#7ac850,#4a9ed0,#c8e08a)', 'Natural', 'Agrícola', true, 75);
+      '', '', '', true, 75);
     html += mkContentFrame('mf-donut', 'Distribución (%)', '<div class="chart-wrap"><canvas id="chart-mf-donut"></canvas></div>');
     html += mkContentFrame('mf-tbl',   'Unidades',         '<table class="compact-table" id="tbl-mf"></table>');
     html += mkContentFrame('mf-bar',   'Superficie (Ha)',  '<div class="chart-wrap"><canvas id="chart-mf-bar"></canvas></div>');
