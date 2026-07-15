@@ -1016,20 +1016,38 @@ var GEO_DISENO = {
 var GEO_POTPROD = {1:'#008000',2:'#66b300',3:'#cce600',4:'#ffcc00',5:'#ff6600',6:'#ff0000',7:'#ff0000',8:'#ff0000'};
 var GEO_NO_AGR  = {'camino':'#000000','instalaciones':'#acacac','parche-le':'#d62edc','parche-herb':'#fb9a99','corredor-le':'#d62edc'};
 
+/* Clasifica texto libre de UNIDAD (el equipo GIS a veces entrega variantes como
+   "camino vecinal", "parche-le exotico", "agricola" suelto) a una clave canónica
+   por palabra clave, para no depender de un match exacto contra GEO_*. */
+function classifyUnidad(u) {
+  if (!u) return '';
+  if (u.indexOf('parche')       > -1) return u.indexOf('herb') > -1 ? 'parche-herb'   : 'parche-le';
+  if (u.indexOf('corr')         > -1) return u.indexOf('herb') > -1 ? 'corredor-herb' : 'corredor-le';
+  if (u.indexOf('camino')       > -1) return 'camino';
+  if (u.indexOf('instalacion')  > -1) return 'instalaciones';
+  if (u.indexOf('riego')        > -1) return 'ag-riego';
+  if (u.indexOf('agricola') > -1 || u.indexOf('secano') > -1) return 'ag-secano';
+  return '';
+}
+
+function lookupUnidadColor(map, unidad, comp) {
+  if (map[unidad]) return map[unidad];
+  var cls = classifyUnidad(unidad);
+  if (cls && map[cls]) return map[cls];
+  var fallback = (comp === 'produccion') ? 'produccion' : (comp || 'otros');
+  return map[fallback] || null;
+}
+
 function geoJSONStyle(tipo, feature) {
   var p = feature ? (feature.properties || {}) : {};
   var unidad = (p.UNIDAD || p.Unidad || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
-  if (!unidad) {
-    var comp = (p.COMPONENTE || p.cobertura || '').toLowerCase();
-    var uso  = (p.USO || '').toLowerCase();
-    unidad = (comp === 'produccion') ? 'produccion' : (comp || 'otros');
-  }
+  var comp = (p.COMPONENTE || p.cobertura || '').toLowerCase();
   if (tipo === 'paisaje_ini') {
-    var c = GEO_PAISAJE[unidad] || '#b0b0b0';
+    var c = lookupUnidadColor(GEO_PAISAJE, unidad, comp) || '#b0b0b0';
     return {fillColor:c, stroke:false, fillOpacity:0.85};
   }
   if (tipo === 'multifuncional') {
-    var c = GEO_DISENO[unidad] || '#b0b0b0';
+    var c = lookupUnidadColor(GEO_DISENO, unidad, comp) || '#b0b0b0';
     return {fillColor:c, stroke:false, fillOpacity:0.85};
   }
   if (tipo === 'potencial') {
@@ -1041,14 +1059,14 @@ function geoJSONStyle(tipo, feature) {
     return {color:'#85b66f', weight:1.2, opacity:0.85, fill:false};
   }
   if (tipo === 'restaurar') {
-    var c = GEO_PAISAJE[unidad] || '#b0b0b0';
+    var c = lookupUnidadColor(GEO_PAISAJE, unidad, comp) || '#b0b0b0';
     return {fillColor:c, stroke:false, fillOpacity:0.85};
   }
   if (tipo === 'restaurar_contorno') {
     return {color:'#000000', weight:1.5, opacity:0.9, fill:false};
   }
   if (tipo === 'paisaje_no_agr_ini' || tipo === 'paisaje_no_agr_mf') {
-    var c = GEO_NO_AGR[unidad] || '#b0b0b0';
+    var c = lookupUnidadColor(GEO_NO_AGR, unidad, comp) || '#b0b0b0';
     return {fillColor:c, stroke:false, fillOpacity:0.75};
   }
   return {fillColor:'#888', stroke:false, fillOpacity:0.7};
