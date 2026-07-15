@@ -166,6 +166,7 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 }
 .compact-table td { padding:4px 6px; border-bottom:1px solid #f0f4ec; }
 .compact-table tr:last-child td { border-bottom:none; }
+.compact-table tr.total-row td { border-top:1px solid var(--border); font-weight:600; }
 .compact-table .ha { text-align:right; font-weight:600; color:var(--hdr); }
 .compact-table .swatch { width:10px; height:10px; border-radius:2px; display:inline-block; flex-shrink:0; }
 
@@ -1012,7 +1013,7 @@ var GEO_DISENO = {
   'camino':'#b0b0b0','instalaciones':'#b0b0b0',
   'otros-parches':'#1f78b4'
 };
-var GEO_POTPROD = {1:'#2d8c1a',2:'#4fb32e',3:'#96cc42',4:'#c8db40',5:'#f0d830',6:'#e87020',7:'#d42020',8:'#909090'};
+var GEO_POTPROD = {1:'#008000',2:'#66b300',3:'#cce600',4:'#ffcc00',5:'#ff6600',6:'#ff0000',7:'#ff0000',8:'#ff0000'};
 var GEO_NO_AGR  = {'camino':'#000000','instalaciones':'#acacac','parche-le':'#d62edc','parche-herb':'#fb9a99','corredor-le':'#d62edc'};
 
 function geoJSONStyle(tipo, feature) {
@@ -1044,7 +1045,7 @@ function geoJSONStyle(tipo, feature) {
     return {fillColor:c, stroke:false, fillOpacity:0.85};
   }
   if (tipo === 'restaurar_contorno') {
-    return {color:'#ffffff', weight:1.5, opacity:0.9, fill:false};
+    return {color:'#000000', weight:1.5, opacity:0.9, fill:false};
   }
   if (tipo === 'paisaje_no_agr_ini' || tipo === 'paisaje_no_agr_mf') {
     var c = GEO_NO_AGR[unidad] || '#b0b0b0';
@@ -1473,7 +1474,7 @@ function buildVizPanel(id) {
   } else if (id === 'potencial') {
     html += mkLayerFrame('potencial', 'Potencial Productivo',
       'Clasificación del potencial del suelo',
-      'linear-gradient(to right,#2d8c1a,#7ac850,#f0d830,#e87020,#d42020)', 'PP 1 (alto)', 'PP 7 (bajo)', true, 75);
+      'linear-gradient(to right,#008000,#66b300,#cce600,#ffcc00,#ff6600,#ff0000)', 'PP 1 (alto)', 'PP 7 (bajo)', true, 75);
     html += mkContentFrame('pp-donut', 'Distribución (%)',    '<div class="chart-wrap"><canvas id="chart-pp-donut"></canvas></div>');
     html += mkContentFrame('pp-tbl',   'Clases de Potencial', '<table class="compact-table" id="tbl-pp"></table>');
     html += mkContentFrame('pp-bar',   'Superficie (Ha)',     '<div class="chart-wrap"><canvas id="chart-pp-bar"></canvas></div>');
@@ -1487,15 +1488,15 @@ function buildVizPanel(id) {
     html += mkContentFrame('mf-bar',   'Superficie (Ha)',  '<div class="chart-wrap"><canvas id="chart-mf-bar"></canvas></div>');
 
   } else if (id === 'restaurar') {
-    html += mkLayerFrame('restaurar-pot', 'Potencial Productivo',
-      'Clasificación del potencial del suelo',
-      'linear-gradient(to right,#2d8c1a,#7ac850,#f0d830,#e87020,#d42020)', 'PP 1 (alto)', 'PP 7 (bajo)', true, 75);
     html += mkLayerFrame('restaurar_contorno', 'Áreas a Restaurar',
       'Parches y corredores propuestos',
       '', '', '', true, 75);
+    html += mkLayerFrame('restaurar-pot', 'Potencial Productivo',
+      'Clasificación del potencial del suelo',
+      'linear-gradient(to right,#008000,#66b300,#cce600,#ffcc00,#ff6600,#ff0000)', 'PP 1 (alto)', 'PP 7 (bajo)', true, 75);
     html += mkContentFrame('re-donut', 'Distribución por Potencial (%)', '<div class="chart-wrap"><canvas id="chart-re-donut"></canvas></div>');
     html += mkContentFrame('re-tbl',   'Detalle',                        '<table class="compact-table" id="tbl-re"></table>');
-    html += mkContentFrame('re-bar',   'Superficie (Ha)',                '<div class="chart-wrap-sm"><canvas id="chart-re-bar"></canvas></div>');
+    html += mkContentFrame('re-bar',   'Superficie (Ha)',                '<div class="chart-wrap"><canvas id="chart-re-bar"></canvas></div>');
 
   } else if (id === 'impacto-prod') {
     html += mkLayerFrame('dist_ini', 'Distancia a Naturaleza — Inicial',
@@ -1779,12 +1780,21 @@ function buildTable(tableId, rows, colA, colB) {
   rows.forEach(function(r) {
     var ha = r.ha !== undefined ? r.ha : (r.value||0);
     var dot = r.color ? '<span class="swatch" style="background:'+r.color+';margin-right:5px"></span>' : '';
-    h += '<tr><td>'+dot+(r.label||r.nombre||'')+'</td><td class="ha">'+ha.toFixed(2)+'</td></tr>';
+    var cls = r.label === 'TOTAL' ? ' class="total-row"' : '';
+    h += '<tr'+cls+'><td>'+dot+(r.label||r.nombre||'')+'</td><td class="ha">'+ha.toFixed(2)+'</td></tr>';
   });
   el.innerHTML = h+'</tbody>';
 }
 
 var chartInited = {};
+
+function sortByPPNum(arr) {
+  return arr.slice().sort(function(a, b) {
+    var na = parseInt((a.label || '').replace(/[^0-9]/g, ''), 10);
+    var nb = parseInt((b.label || '').replace(/[^0-9]/g, ''), 10);
+    return na - nb;
+  });
+}
 
 function initChartsForSec(id) {
   if (chartInited[id]) return;
@@ -1802,7 +1812,8 @@ function initChartsForSec(id) {
     var pp = d.potencial_productivo.clases;
     mkDonut('chart-pp-donut', pp.map(function(x){return x.label;}), pp.map(function(x){return x.pct;}), pp.map(function(x){return x.color;}));
     buildTable('tbl-pp', pp, 'Pot. Prod.', 'Ha.');
-    mkBar('chart-pp-bar', pp.map(function(x){return x.label;}), pp.map(function(x){return x.ha;}), pp.map(function(x){return x.color;}), true);
+    var ppOrd = sortByPPNum(pp);
+    mkBar('chart-pp-bar', ppOrd.map(function(x){return x.label;}), ppOrd.map(function(x){return x.ha;}), ppOrd.map(function(x){return x.color;}), true);
 
   } else if (id === 'multifuncional') {
     var mf = d.multifuncional.unidades;
@@ -1814,8 +1825,9 @@ function initChartsForSec(id) {
   } else if (id === 'restaurar') {
     var re = d.restaurar.clases;
     mkDonut('chart-re-donut', re.map(function(x){return x.label;}), re.map(function(x){return x.pct;}), re.map(function(x){return x.color;}));
-    buildTable('tbl-re', [{label:'TOTAL',ha:d.restaurar.total_ha,color:''}].concat(re), 'Pot. Prod.', 'Ha. a restaurar');
-    mkBar('chart-re-bar', re.map(function(x){return x.label;}), re.map(function(x){return x.ha;}), re.map(function(x){return x.color;}), true);
+    buildTable('tbl-re', re.concat([{label:'TOTAL',ha:d.restaurar.total_ha,color:''}]), 'Pot. Prod.', 'Ha. a restaurar');
+    var reOrd = sortByPPNum(re);
+    mkBar('chart-re-bar', reOrd.map(function(x){return x.label;}), reOrd.map(function(x){return x.ha;}), reOrd.map(function(x){return x.color;}), true);
 
   } else if (id === 'impacto-nat') {
     var i = d.impacto_naturaleza;
