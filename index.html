@@ -420,6 +420,15 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
   transition:border-color .2s; box-sizing:border-box;
 }
 .perfil-input:focus { border-color:var(--acc); }
+.perfil-pass-wrap { position:relative; width:100%; margin-bottom:14px; }
+.perfil-pass-wrap .perfil-input { margin-bottom:0; padding-right:40px; }
+.perfil-pass-toggle {
+  position:absolute; top:0; right:0; height:100%; width:38px;
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:none; padding:0; cursor:pointer;
+  color:var(--muted); font-size:14px; transition:color .2s;
+}
+.perfil-pass-toggle:hover { color:var(--acc); }
 #perfil-btn {
   width:100%; padding:11px; border:none; border-radius:9px;
   background:var(--hdr); color:#fff; font-size:13px; font-weight:700;
@@ -492,6 +501,15 @@ select.admin-select { padding-right:20px; }
   transition:border-color .2s;
 }
 .login-input:focus { border-color:var(--acc); }
+.login-pass-wrap { position:relative; width:100%; }
+.login-pass-wrap .login-input { padding-right:40px; }
+#login-pass-toggle {
+  position:absolute; top:0; right:0; height:100%; width:38px;
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:none; padding:0; cursor:pointer;
+  color:var(--muted); font-size:14px; transition:color .2s;
+}
+#login-pass-toggle:hover { color:var(--acc); }
 #login-btn {
   width:100%; margin-top:24px; padding:12px; border:none; border-radius:9px;
   background:var(--hdr); color:#fff; font-size:14px; font-weight:700;
@@ -571,8 +589,14 @@ select.admin-select { padding-right:20px; }
     <input class="login-input" type="email" id="login-email"
       placeholder="usuario@empresa.com" autocomplete="email"/>
     <label class="login-label" for="login-password">Contraseña</label>
-    <input class="login-input" type="password" id="login-password"
-      placeholder="••••••••" autocomplete="current-password"/>
+    <div class="login-pass-wrap">
+      <input class="login-input" type="password" id="login-password"
+        placeholder="••••••••" autocomplete="current-password"/>
+      <button type="button" id="login-pass-toggle" onclick="togglePassVisibility('login-password', this)"
+        aria-label="Mostrar contraseña" title="Mostrar contraseña">
+        <i class="fa-solid fa-eye"></i>
+      </button>
+    </div>
     <button id="login-btn" onclick="doLogin()">Ingresar</button>
     <div id="login-error"></div>
     <div id="login-version">AgroDesign &copy; 2026</div>
@@ -828,9 +852,23 @@ select.admin-select { padding-right:20px; }
           <div class="perfil-col">
             <p class="perfil-section-title">Cambiar contraseña</p>
             <label class="perfil-label" for="perfil-new-pass">Nueva contraseña</label>
-            <input class="perfil-input" type="password" id="perfil-new-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+            <div class="perfil-pass-wrap">
+              <input class="perfil-input" type="password" id="perfil-new-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+              <button type="button" class="perfil-pass-toggle" id="perfil-new-pass-toggle"
+                onclick="togglePassVisibility('perfil-new-pass', this)"
+                aria-label="Mostrar contraseña" title="Mostrar contraseña">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
             <label class="perfil-label" for="perfil-confirm-pass">Confirmar contraseña</label>
-            <input class="perfil-input" type="password" id="perfil-confirm-pass" placeholder="Repetí la contraseña" autocomplete="new-password"/>
+            <div class="perfil-pass-wrap">
+              <input class="perfil-input" type="password" id="perfil-confirm-pass" placeholder="Repetí la contraseña" autocomplete="new-password"/>
+              <button type="button" class="perfil-pass-toggle" id="perfil-confirm-pass-toggle"
+                onclick="togglePassVisibility('perfil-confirm-pass', this)"
+                aria-label="Mostrar contraseña" title="Mostrar contraseña">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
             <button id="perfil-btn" onclick="doChangePassword()">Guardar nueva contraseña</button>
             <div class="perfil-msg" id="perfil-msg"></div>
           </div>
@@ -1947,6 +1985,20 @@ function initSupabase() {
   }
 }
 
+/* == Mostrar / ocultar contraseña == */
+function togglePassVisibility(inpId, btn) {
+  var inp  = document.getElementById(inpId || 'login-password');
+  btn      = btn || document.getElementById('login-pass-toggle');
+  var icon = btn.querySelector('i');
+  var show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  icon.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+  var lbl = show ? 'Ocultar contraseña' : 'Mostrar contraseña';
+  btn.setAttribute('aria-label', lbl);
+  btn.setAttribute('title', lbl);
+  inp.focus();
+}
+
 /* == Login == */
 async function doLogin() {
   var btn   = document.getElementById('login-btn');
@@ -2024,6 +2076,8 @@ async function afterLogin(session) {
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('login-email').value    = '';
   document.getElementById('login-password').value = '';
+  document.getElementById('login-password').type  = 'password';
+  document.getElementById('login-pass-toggle').querySelector('i').className = 'fa-solid fa-eye';
 
   initNavTooltips();
   document.getElementById('client-switcher').classList.add('visible');
@@ -2288,6 +2342,10 @@ async function doChangePassword() {
     msgEl.classList.add('ok');
     document.getElementById('perfil-new-pass').value     = '';
     document.getElementById('perfil-confirm-pass').value = '';
+    ['perfil-new-pass','perfil-confirm-pass'].forEach(function(id){
+      document.getElementById(id).type = 'password';
+      document.getElementById(id + '-toggle').querySelector('i').className = 'fa-solid fa-eye';
+    });
   } catch(e) {
     msgEl.textContent = e.message || 'Error al actualizar la contraseña.';
     msgEl.classList.add('err');
