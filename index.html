@@ -1342,10 +1342,7 @@ function activateSec(id) {
       setTimeout(function() { initMapsIP(); }, 50);
       mapInited[id] = true;
     } else {
-      setTimeout(function() {
-        if (ipMapIni) ipMapIni.invalidateSize();
-        if (ipMapDis) ipMapDis.invalidateSize();
-      }, 50);
+      setTimeout(function() { encuadrarIP(); }, 50);
     }
     return;
   }
@@ -1411,7 +1408,9 @@ function activateSec(id) {
     });
   }
 
-  setTimeout(function() { if (theMap) theMap.invalidateSize(); }, 80);
+  /* Encuadre al final: con las capas de la sección ya agregadas y el
+     contenedor ya visible (invalidateSize corre dentro de encuadrar). */
+  setTimeout(function() { encuadrar(theMap, boundsDeSeccion(id)); }, 80);
 }
 
 /* ── Capas por sección ──────────────────────────────────
@@ -1465,6 +1464,79 @@ function capasExistentes(tipos) {
     var c = capaPorTipo(t);
     return (c && (c.url_geojson || c.url_imagen)) ? {tipo:t, capa:c} : null;
   }).filter(function(x){ return x; });
+}
+
+/* ── Encuadre del mapa sobre su contenido ─────────────
+   Antes los mapas arrancaban con un zoom fijo (campo.mapa_zoom, o 13), que
+   dejaba el campo chico en el medio de la pantalla. Ahora cada sección
+   encuadra sobre los bounds de las capas que efectivamente dibuja. */
+var FIT_PADDING = [10, 10];
+
+/* Unión de los bounds de varias capas. Devuelve null si ninguna los tiene:
+   los campos subidos antes del 2026-07-08 pueden no tener capas_gis.bounds
+   (la columna es de esa fecha), y ahí se cae a BOUNDS, que es la unión de
+   todo el campo — peor encuadre que por sección, pero muchísimo mejor que el
+   zoom fijo que había antes. */
+function unirBounds(capas) {
+  var s = null, w = null, n = null, e = null;
+  (capas || []).forEach(function(c) {
+    var b = c && c.bounds;
+    if (!b || !b[0] || !b[1]) return;
+    if (s === null) { s = b[0][0]; w = b[0][1]; n = b[1][0]; e = b[1][1]; return; }
+    s = Math.min(s, b[0][0]); w = Math.min(w, b[0][1]);
+    n = Math.max(n, b[1][0]); e = Math.max(e, b[1][1]);
+  });
+  return (s === null) ? null : [[s, w], [n, e]];
+}
+
+/* Bounds del contenido de una sección de mapa. */
+function boundsDeSeccion(id) {
+  var tipos = (id === 'analisis')     ? ANALISIS_TIPOS.concat(['paisaje_no_agr_ini'])
+            : (id === 'impacto-prod') ? IP_CAPAS_INI.concat(IP_CAPAS_MF)
+            :                           (SEC_CAPAS[id] || []);
+  return unirBounds(capasExistentes(tipos).map(function(x){ return x.capa; }));
+}
+
+/* Encuadra un mapa sobre unos bounds. invalidateSize() va SIEMPRE primero: la
+   sección se acaba de mostrar y Leaflet todavía tiene guardado el tamaño viejo
+   del contenedor — sin esto el fit se calcula contra un tamaño equivocado y
+   queda descuadrado. Con zoomSnap 0.25 el fit redondea hacia abajo, así que el
+   contenido siempre entra entero. */
+function encuadrar(map, bounds) {
+  if (!map) return;
+  map.invalidateSize();
+  var b = bounds || BOUNDS;
+  if (!b) return;
+  /* zoomSnap:0.25 (preferencia de zoom fino en los botones +/-) hace que
+     fitBounds redondee HACIA ABAJO a la grilla de 0,25. Si el zoom ideal cae
+     apenas debajo de un escalón —ej. 14,979— se va a 14,75 y el contenido
+     queda al 83% en vez de llenar. Se apaga el snap sólo durante el encuadre
+     y se restaura enseguida, así los +/- siguen moviéndose de a 0,25. */
+  var snap = map.options.zoomSnap;
+  map.options.zoomSnap = 0;
+  map.fitBounds(b, {padding:FIT_PADDING, animate:false});
+  map.options.zoomSnap = snap;
+}
+
+/* Encuadre de los dos mapas de Impacto Producción, que son una comparación
+   lado a lado y tienen que quedar SIEMPRE en la misma vista.
+   No alcanza con encuadrar cada uno por su lado: el handler de sync propaga
+   con setView(), que pasa por _limitZoom() y redondea a la grilla de zoomSnap.
+   El zoom fraccionario que deja el fit se redondea al propagarse y los dos
+   mapas terminan en valores distintos — visible como un desfasaje entre
+   paneles. Se silencia el sync durante el encuadre y se copia la vista exacta. */
+function encuadrarIP() {
+  if (!ipMapIni || !ipMapDis) return;
+  var b = boundsDeSeccion('impacto-prod');
+  var previo = ipSyncing;
+  ipSyncing = true;
+  encuadrar(ipMapIni, b);
+  ipMapDis.invalidateSize();
+  var snap = ipMapDis.options.zoomSnap;
+  ipMapDis.options.zoomSnap = 0;
+  ipMapDis.setView(ipMapIni.getCenter(), ipMapIni.getZoom(), {animate:false});
+  ipMapDis.options.zoomSnap = snap;
+  ipSyncing = previo;
 }
 
 /* Panes con z-index fijo: el orden visual no puede depender de cuál GeoJSON
@@ -1600,10 +1672,7 @@ function initMapsIP() {
   ipMapIni.on('mouseout',  onMapMouseOut);
   ipMapDis.on('mousemove', onMapMouseMove);
   ipMapDis.on('mouseout',  onMapMouseOut);
-  setTimeout(function() {
-    if (ipMapIni) ipMapIni.invalidateSize();
-    if (ipMapDis) ipMapDis.invalidateSize();
-  }, 150);
+  setTimeout(function() { encuadrarIP(); }, 150);
 }
 
 /* ── Viz Panel builder ──────────────────────────────── */
