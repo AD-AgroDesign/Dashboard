@@ -384,6 +384,15 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 .leaflet-control-zoom a:hover { background:var(--bg)!important; }
 .leaflet-control-attribution { background:rgba(255,255,255,.8)!important; font-size:9px!important; }
 
+/* Rásters de Análisis de Imágenes: el producto viene a ~30 m/px y Leaflet lo
+   agranda ~10x en pantalla. Por defecto el navegador interpola y se ve
+   borroso; así se ve la celda real del dato. Se aplica sólo a estas capas
+   (ver RASTER_PIXELADO): dist_ini/dist_dis ya vienen a ~1 m/px y pixelarlas
+   sólo agregaría aliasing al alejar el zoom.
+   crisp-edges va primero como fallback (Firefox viejo) y pixelated último,
+   porque la última declaración soportada es la que gana. */
+.raster-pixelado { image-rendering:crisp-edges; image-rendering:pixelated; }
+
 /* ── Impacto Producción KPIs ────────────────────────── */
 .kpi-delta { font-size:24px; font-weight:800; color:var(--acc); text-align:center; padding:6px 0; letter-spacing:-.5px; }
 .kpi-delta-label { font-size:10px; color:var(--muted); text-align:center; }
@@ -1053,6 +1062,15 @@ var ANALISIS_GRADIENTS = {
    (dem → twi → ls); curvas_nivel es opcional. Ver buildAnalisisCaps. */
 var ANALISIS_TIPOS = ['evi','evi_cv','ndmi','mndwi','dem','twi','ls','curvas_nivel'];
 
+/* Capas que se dibujan sin interpolar (clase CSS .raster-pixelado). Son los
+   rásters de análisis_imagenes, que vienen a ~30 m/px: al agrandarlos el
+   navegador los difumina y parecen de mala calidad. Verificado 2026-07-31 —
+   entregar el mismo producto remuestreado a 1 m/px da idénticos valores (0
+   valores nuevos en 6,8 M de píxeles) y pesa 26 MB, así que se resuelve acá.
+   NO incluir dist_ini/dist_dis: ya son de ~1 m/px y pixelarlas sólo agrega
+   aliasing al alejar el zoom. */
+var RASTER_PIXELADO = ['evi','evi_cv','ndmi','mndwi','dem','twi','ls'];
+
 /* ── GeoJSON styles ─────────────────────────────────── */
 var GEO_PAISAJE = {
   'ag-secano':'#5ab32e','ag-riego':'#4a9ed0',
@@ -1483,8 +1501,9 @@ function crearCapa(tipo, capa, paneIdx, opa, cb) {
       cb(layer);
     }).catch(function(e){ console.warn('GeoJSON', tipo, e); });
   } else if (capa.url_imagen) {
-    cb(L.imageOverlay(capa.url_imagen, capa.bounds || BOUNDS,
-                      {opacity: opa / 100, interactive:false, pane: pane}));
+    var opts = {opacity: opa / 100, interactive:false, pane: pane};
+    if (RASTER_PIXELADO.indexOf(tipo) !== -1) opts.className = 'raster-pixelado';
+    cb(L.imageOverlay(capa.url_imagen, capa.bounds || BOUNDS, opts));
   }
 }
 
@@ -1616,15 +1635,18 @@ function buildVizPanel(id) {
     html += mkContentFrame('info-dl-mapas', 'Mapas / KMZ / Geo',
       '<a class="vf-dl-btn" href="'+(dl.geo_url||'#')+'" '+(dl.geo_url?'target="_blank"':'')+'>'+
       '<i class="fa-solid fa-location-dot"></i>Descargar KMZ</a>');
-    /* Manual e Infografía son documentos fijos de la empresa; el PDF
-       georeferenciado sale de la subcarpeta pdf_gf/ de cada cliente. */
+    /* Manual e Infografía son documentos fijos de la empresa; el Mapa de
+       Implementación sale de la subcarpeta pdf_gf/ de cada cliente. */
     html += mkContentFrame('info-dl-impl', 'Implementación',
       '<a class="vf-dl-btn" href="https://drive.google.com/file/d/1d36wqk4dpfR8snD-BxdSoWY8N_yt5G6M/edit" target="_blank">'+
       '<i class="fa-solid fa-book"></i>Descargar Manual</a>'+
       '<a class="vf-dl-btn" href="https://drive.google.com/file/d/1TCcFxGgeZBUTusy3JhQBjXAppDnSGHqj/view" target="_blank">'+
       '<i class="fa-solid fa-image"></i>Descargar Infografía</a>'+
       '<a class="vf-dl-btn" href="'+(dl.pdf_gf_url||'#')+'" '+(dl.pdf_gf_url?'target="_blank"':'')+'>'+
-      '<i class="fa-solid fa-file-pdf"></i>Descargar PDF georeferenciado</a>');
+      /* fa-file-pdf NO se puede usar: en Font Awesome 6.5.0 Free su glifo dice
+         "PNG", no "PDF" (verificado 2026-07-31; word/excel/csv sí son correctos,
+         el defecto es sólo de este icono). Ninguno del set Free rotula "PDF". */
+      '<i class="fa-solid fa-map-location-dot"></i>Descargar Mapa de Implementación</a>');
 
   } else if (id === 'implementacion') {
     var dl = C.descargas || {};
