@@ -1079,18 +1079,28 @@ var GEO_NO_AGR  = {'camino':'#000000','instalaciones':'#acacac','parche-le':'#d6
 
 /* Catálogo de códigos RASTER → simbología. Espejo de CAT_RASTER en
    agro_catalogo.py: si se toca uno hay que tocar el otro. Se usa como respaldo
-   cuando la capa no trae `estilo` cargado desde el QML. */
+   cuando la capa no trae `estilo` cargado desde el QML — el caso de todos los
+   clientes que todavía no se re-subieron con la estructura de carpetas nueva.
+
+   Esquema: 3X = matriz productiva (31 secano, 33 ganadería), 3XY = sus
+   macroambientes en el paisaje multifuncional (311-313 sobre secano,
+   331-333 sobre ganadería). Los tres macroambientes comparten color. */
 var CAT_RASTER = {
   '11':  {fill:'#ec5086', stroke:'#9d1141'},
   '12':  {fill:'#ec5086', stroke:null},
   '21':  {fill:'#fb9a99', stroke:'#d60a08'},
   '22':  {fill:'#fb9a99', stroke:null},
+  '31':  {fill:'#5ab32e', stroke:null},
   '33':  {fill:'#33a02c', stroke:null},
+  '311': {fill:'#1a9641', stroke:null},
+  '312': {fill:'#60b856', stroke:null},
+  '313': {fill:'#a6d96a', stroke:null},
   '331': {fill:'#1a9641', stroke:null},
   '332': {fill:'#60b856', stroke:null},
   '333': {fill:'#a6d96a', stroke:null},
   '41':  {fill:'#969696', stroke:null},
   '42':  {fill:'#000000', stroke:null},
+  '43':  {fill:'#b0b0b0', stroke:null},
   '47':  {fill:'#e3c16f', stroke:null}
 };
 
