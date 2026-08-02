@@ -1470,7 +1470,13 @@ function capasExistentes(tipos) {
    Antes los mapas arrancaban con un zoom fijo (campo.mapa_zoom, o 13), que
    dejaba el campo chico en el medio de la pantalla. Ahora cada sección
    encuadra sobre los bounds de las capas que efectivamente dibuja. */
-var FIT_PADDING = [10, 10];
+/* Padding asimétrico: la franja superior del mapa la ocupan tres overlays a
+   top:10px — el control de zoom de Leaflet (izq, ~64px), la píldora del
+   título (centro, ~27px, fondo casi opaco) y el badge (der). Con 10px arriba
+   el borde norte de la capa quedaba tapado por ellos. Abajo alcanza con 10:
+   sólo está la atribución de Leaflet, que es diminuta. */
+var FIT_PAD_TL = [10, 44];
+var FIT_PAD_BR = [10, 10];
 
 /* Unión de los bounds de varias capas. Devuelve null si ninguna los tiene:
    los campos subidos antes del 2026-07-08 pueden no tener capas_gis.bounds
@@ -1514,7 +1520,7 @@ function encuadrar(map, bounds) {
      y se restaura enseguida, así los +/- siguen moviéndose de a 0,25. */
   var snap = map.options.zoomSnap;
   map.options.zoomSnap = 0;
-  map.fitBounds(b, {padding:FIT_PADDING, animate:false});
+  map.fitBounds(b, {paddingTopLeft:FIT_PAD_TL, paddingBottomRight:FIT_PAD_BR, animate:false});
   map.options.zoomSnap = snap;
 }
 
