@@ -1281,7 +1281,46 @@ function closeVizPanel() {
 }
 
 function toggleVizPanel() {
+  cancelarAutoOcultar();   /* si lo tocás vos, manda tu decisión */
   if (vizOpen) { closeVizPanel(); } else { openVizPanel(); }
+}
+
+/* ── Auto-ocultar el panel en las secciones de mapa ───
+   El panel se abre como siempre —así el usuario ve que existe y dónde está la
+   pestaña para volver a abrirlo— y se retira solo a los pocos segundos para
+   dejar el mapa despejado.
+   Sólo en secciones de mapa: en Info General y Ecorregiones el panel ES el
+   contenido, ocultarlo dejaría la pantalla vacía. */
+var VIZ_AUTOHIDE_MS = 4000;
+var _autoHideT      = null;
+var _autoHideWired  = false;
+
+function cancelarAutoOcultar() {
+  if (_autoHideT) { clearTimeout(_autoHideT); _autoHideT = null; }
+}
+
+/* Si el usuario se mete en el panel (lo apunta, hace scroll, toca un slider),
+   deja de ser una ayuda y pasa a ser una interrupción: se cancela el retiro. */
+function wireAutoOcultar() {
+  if (_autoHideWired) return;
+  var p = document.getElementById('viz-panel');
+  if (!p) return;
+  ['pointerenter', 'pointerdown', 'wheel', 'touchstart'].forEach(function(ev) {
+    p.addEventListener(ev, cancelarAutoOcultar, {passive:true});
+  });
+  _autoHideWired = true;
+}
+
+function programarAutoOcultar(id) {
+  cancelarAutoOcultar();
+  if (!isMapSec[id] || !hasPanel[id]) return;
+  wireAutoOcultar();
+  var secProgramada = id;
+  _autoHideT = setTimeout(function() {
+    _autoHideT = null;
+    /* Si mientras tanto cambió de sección o ya lo cerró a mano, no tocar nada. */
+    if (currentSec === secProgramada && vizOpen) closeVizPanel();
+  }, VIZ_AUTOHIDE_MS);
 }
 
 /* ── Main navigation ────────────────────────────────── */
@@ -1291,6 +1330,8 @@ function showSec(id) {
   if (ni) ni.classList.add('active');
 
   if (id === currentSec) {
+    /* Click en la sección activa = toggle manual: manda el usuario. */
+    cancelarAutoOcultar();
     if (hasPanel[id]) { vizOpen ? closeVizPanel() : openVizPanel(); }
     return;
   }
@@ -1302,13 +1343,13 @@ function showSec(id) {
     setTimeout(function() {
       activateSec(id);
       buildVizPanel(id);
-      if (hasPanel[id]) openVizPanel();
+      if (hasPanel[id]) { openVizPanel(); programarAutoOcultar(id); }
       else document.getElementById('panel-tab').classList.remove('visible');
     }, ANIM_MS);
   } else {
     activateSec(id);
     buildVizPanel(id);
-    if (hasPanel[id]) openVizPanel();
+    if (hasPanel[id]) { openVizPanel(); programarAutoOcultar(id); }
     else document.getElementById('panel-tab').classList.remove('visible');
   }
 }
