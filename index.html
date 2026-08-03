@@ -34,6 +34,9 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
   display:flex; align-items:center; gap:10px; padding:0 18px;
   border-right:1px solid rgba(255,255,255,.15); flex-shrink:0; min-width:190px;
 }
+/* Estaba inline en el <img>, y ahi ganaba sobre los @media: se movio aca para
+   poder achicar el logo en pantallas angostas. */
+#hdr-brand img { height:36px; width:auto; }
 .logo-text { font-size:18px; font-weight:800; color:#fff; letter-spacing:-0.5px; text-shadow:0 1px 3px rgba(0,0,0,.3); }
 .logo-text span { color:var(--gold2); }
 .logo-sub { font-size:9px; color:rgba(255,255,255,.6); letter-spacing:0.5px; text-transform:uppercase; }
@@ -323,8 +326,11 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 .sw-item-chk  { color:var(--gold2); font-size:12px; flex-shrink:0; }
 
 /* En pantallas angostas el header no entra (marca 190px + trigger ~170px) y
-   arrastraba al switcher fuera del viewport: el desplegable quedaba cortado
-   por la derecha. Se achica el header y el desplegable se ancla al viewport. */
+   arrastraba al switcher fuera del viewport: el desplegable quedaba cortado por
+   la derecha. Se achica el header, y el desplegable se ancla al viewport pero
+   conservando los 230px que mide en escritorio — NO se estira a todo el ancho
+   (decisión de Mike, 2026-08-02). Anclarlo al viewport y no al trigger lo hace
+   inmune a que el header vuelva a desbordar por un nombre largo. */
 @media (max-width:640px) {
   #hdr-brand { min-width:0; padding:0 12px; }
   #hdr-brand img { height:28px; }
@@ -333,10 +339,17 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
   #client-switcher { margin-right:8px; }
   .sw-ctrl-name { max-width:90px; }
   #sw-dropdown {
-    position:fixed; top:60px; left:10px; right:10px; min-width:0;
+    position:fixed; top:60px; right:10px; left:auto;
+    width:230px; min-width:0;
     max-height:calc(100vh - 74px);
     max-height:calc(100dvh - 74px);
   }
+}
+/* Abajo de 380px ni el logo ni el nombre del campo entran junto al trigger: el
+   header desbordaba 9px y le cortaba la flecha. */
+@media (max-width:380px) {
+  #hdr-brand img { height:24px; }
+  .sw-ctrl-name { max-width:64px; }
 }
 
 /* ── Info Gral ──────────────────────────────────────── */
@@ -676,7 +689,7 @@ select.admin-select { padding-right:20px; }
 <!-- HEADER ──────────────────────────────────────────── -->
 <div id="header">
   <div id="hdr-brand">
-    <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo2_AgroDesign.png" alt="AgroDesign" style="height:36px;width:auto;">
+    <img src="https://ivucpzmedseoanjrwutn.supabase.co/storage/v1/object/public/mapas/assets/logo2_AgroDesign.png" alt="AgroDesign">
   </div>
   <div id="hdr-title">
     <div class="cr">Customer Report</div>
