@@ -66,6 +66,19 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
   border-bottom:1px solid rgba(255,255,255,.12);
 }
 #sidebar-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
+/* La lista de secciones scrollea; el boton de colapsar (arriba) y Mi Perfil
+   (abajo) quedan fijos. Sin esto, en pantallas bajas los items se comprimian
+   unos contra otros y Mi Perfil terminaba recortado por el overflow:hidden. */
+#nav-scroll {
+  flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;
+  overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin; scrollbar-color:rgba(232,192,80,.45) transparent;
+}
+#nav-scroll::-webkit-scrollbar { width:6px; }
+#nav-scroll::-webkit-scrollbar-track { background:transparent; }
+#nav-scroll::-webkit-scrollbar-thumb { background:rgba(232,192,80,.45); border-radius:3px; }
+#nav-scroll::-webkit-scrollbar-thumb:hover { background:rgba(232,192,80,.75); }
+#nav-perfil { flex-shrink:0; }
 .nav-item {
   display:flex; align-items:center; gap:12px;
   padding:11px 17px; color:rgba(255,255,255,.75);
@@ -272,13 +285,30 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
   background:var(--hdr2); border:1px solid var(--gold2); border-radius:8px;
   box-shadow:0 8px 28px rgba(0,0,0,.45); z-index:200; overflow:hidden;
   display:none;
+  /* el header mide 52px y el dropdown arranca 8px abajo: dejamos 16px de aire */
+  max-height:calc(100vh - 76px);
+  max-height:calc(100dvh - 76px);
 }
-#sw-dropdown.open { display:block; }
+#sw-dropdown.open { display:flex; flex-direction:column; }
 .sw-dd-hdr {
   padding:7px 12px; background:rgba(255,255,255,.06);
   font-size:8px; letter-spacing:2px; text-transform:uppercase;
   color:rgba(255,255,255,.4); border-bottom:1px solid rgba(255,255,255,.1);
+  flex-shrink:0;
 }
+/* la lista scrollea; el titulo queda fijo y el radio del contenedor se respeta */
+#sw-list {
+  overflow-y:auto; min-height:0; overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin; scrollbar-color:rgba(232,192,80,.55) transparent;
+}
+#sw-list::-webkit-scrollbar { width:8px; }
+#sw-list::-webkit-scrollbar-track { background:transparent; }
+#sw-list::-webkit-scrollbar-thumb {
+  background:rgba(232,192,80,.5); border-radius:4px;
+  border:2px solid transparent; background-clip:content-box;
+}
+#sw-list::-webkit-scrollbar-thumb:hover { background:rgba(232,192,80,.8); background-clip:content-box; }
 .sw-item {
   display:flex; align-items:center; gap:10px; padding:9px 12px;
   cursor:pointer; border-bottom:1px solid rgba(255,255,255,.07);
@@ -291,6 +321,23 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 .sw-item.active .sw-dot { background:var(--gold2); }
 .sw-item-name { font-size:12px; font-weight:500; color:#fff; flex:1; }
 .sw-item-chk  { color:var(--gold2); font-size:12px; flex-shrink:0; }
+
+/* En pantallas angostas el header no entra (marca 190px + trigger ~170px) y
+   arrastraba al switcher fuera del viewport: el desplegable quedaba cortado
+   por la derecha. Se achica el header y el desplegable se ancla al viewport. */
+@media (max-width:640px) {
+  #hdr-brand { min-width:0; padding:0 12px; }
+  #hdr-brand img { height:28px; }
+  #hdr-title { padding:0 10px; min-width:0; overflow:hidden; }
+  #hdr-title .fn { font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #client-switcher { margin-right:8px; }
+  .sw-ctrl-name { max-width:90px; }
+  #sw-dropdown {
+    position:fixed; top:60px; left:10px; right:10px; min-width:0;
+    max-height:calc(100vh - 74px);
+    max-height:calc(100dvh - 74px);
+  }
+}
 
 /* ── Info Gral ──────────────────────────────────────── */
 #full-info { display:none; flex-direction:row; background:#fff; }
@@ -659,6 +706,7 @@ select.admin-select { padding-right:20px; }
     <div id="sidebar-btn" onclick="toggleSidebar()" title="Colapsar menú">
       <i class="fa-solid fa-chevron-left"></i>
     </div>
+    <div id="nav-scroll">
     <div class="nav-item active" data-sec="home" onclick="showSec('home')">
       <i class="fa-solid fa-house"></i><span class="nav-label">Home</span>
     </div>
@@ -692,7 +740,8 @@ select.admin-select { padding-right:20px; }
     <div class="nav-item" id="nav-balance" data-sec="balance" onclick="showSec('balance')" style="display:none">
       <i class="fa-solid fa-chart-pie"></i><span class="nav-label">Balance</span>
     </div>
-    <div class="nav-item" data-sec="perfil" onclick="showSec('perfil')" style="margin-top:auto;border-top:1px solid rgba(255,255,255,.1)">
+    </div><!-- /nav-scroll -->
+    <div class="nav-item" id="nav-perfil" data-sec="perfil" onclick="showSec('perfil')" style="border-top:1px solid rgba(255,255,255,.1)">
       <i class="fa-solid fa-user"></i><span class="nav-label">Mi Perfil</span>
     </div>
   </nav>
@@ -1259,6 +1308,60 @@ function toggleSidebar() {
     tab.style.left = w + 'px';
   }
 }
+
+/* ── Auto-colapso del nav en pantallas angostas ────────
+   Mismo criterio que el auto-ocultar del panel: arranca expandido —así se ve
+   que el menú existe y qué secciones tiene— y se retira solo a los pocos
+   segundos, porque abajo de 640px se lleva 220px de los 375px de un teléfono.
+   Colapsa al riel de iconos de 52px, no a cero: el hamburguesa queda a mano.
+   Si el usuario toca el menú antes, manda su decisión y no se colapsa más. */
+var NAV_BREAKPOINT      = 640;    /* igual que el @media del header y el sidebar */
+var NAV_AUTOCOLAPSO_MS  = 4000;
+var _navColapsoT        = null;
+var _navColapsoWired    = false;
+var _navDecisionUsuario = false;  /* tocó el menú: no auto-colapsar nunca más */
+
+function cancelarAutoColapso() {
+  if (_navColapsoT) { clearTimeout(_navColapsoT); _navColapsoT = null; }
+}
+
+/* Igual que en el panel: apuntarlo, scrollearlo o tocarlo lo convierte en una
+   interrupción en vez de una ayuda. */
+function wireAutoColapso() {
+  if (_navColapsoWired) return;
+  var sb = document.getElementById('sidebar');
+  if (!sb) return;
+  ['pointerenter', 'pointerdown', 'wheel', 'touchstart'].forEach(function(ev) {
+    sb.addEventListener(ev, function() {
+      _navDecisionUsuario = true;
+      cancelarAutoColapso();
+    }, {passive:true});
+  });
+  _navColapsoWired = true;
+}
+
+function programarAutoColapso() {
+  cancelarAutoColapso();
+  if (_navDecisionUsuario || sidebarCollapsed) return;
+  if (window.innerWidth > NAV_BREAKPOINT) return;
+  wireAutoColapso();
+  _navColapsoT = setTimeout(function() {
+    _navColapsoT = null;
+    /* Revalidar: pudo tocarlo, colapsarlo a mano o agrandar la ventana. */
+    if (_navDecisionUsuario || sidebarCollapsed) return;
+    if (window.innerWidth > NAV_BREAKPOINT) return;
+    toggleSidebar();   /* la misma transición de .3s que el colapso manual */
+  }, NAV_AUTOCOLAPSO_MS);
+}
+
+/* Cubre el teléfono que cargó en horizontal (812px, no dispara) y después se
+   rota a vertical (375px). Los guardas de arriba evitan repetirlo. */
+var _navBpTO = null;
+window.addEventListener('resize', function() {
+  if (_navDecisionUsuario || sidebarCollapsed) return;
+  clearTimeout(_navBpTO);
+  _navBpTO = setTimeout(programarAutoColapso, 200);
+});
 
 /* ── Viz Panel ──────────────────────────────────────── */
 function openVizPanel() {
@@ -2363,6 +2466,8 @@ async function afterLogin(session) {
   buildSwitcher();
 
   if (allCampos.length > 0) await fetchCampoData(allCampos[0].id);
+
+  programarAutoColapso();   /* recién acá el dashboard es usable: ahí corren los 4s */
 }
 
 /* == Dropdown dinamico == */
