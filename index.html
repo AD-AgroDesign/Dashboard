@@ -1150,11 +1150,13 @@ var GEO_DISENO = {
   'camino':'#b0b0b0','instalaciones':'#b0b0b0',
   'otros-parches':'#1f78b4'
 };
-/* Rampa de potencial productivo del equipo GIS (potencial_productivo_*.qml).
+/* Rampa de potencial productivo: FALLBACK de los campos sin capas_gis.estilo.
+   Son los 8 pasos de Don Orfel; el equipo GIS estira la rampa según cuántas
+   clases dé el k-means, así que en un campo de 5 clases esto no coincide con el
+   QML — ver paletaPotencial(). Espejo de POTPROD_COLORS en agro_catalogo.py.
    9 y 10 quedan en gris hasta que el equipo las defina. */
 var GEO_POTPROD = {1:'#1a9641',2:'#5bb75e',3:'#94d168',4:'#d8e28c',5:'#fed48e',
                    6:'#f8a462',7:'#ea623d',8:'#d7191c',9:'#909090',10:'#909090'};
-var POTPROD_GRAD = 'linear-gradient(to right,#1a9641,#5bb75e,#94d168,#d8e28c,#fed48e,#f8a462,#ea623d,#d7191c)';
 var GEO_NO_AGR  = {'camino':'#000000','instalaciones':'#acacac','parche-le':'#d62edc','parche-herb':'#fb9a99','corredor-le':'#d62edc'};
 
 /* Catálogo de códigos RASTER → simbología. Espejo de CAT_RASTER en
@@ -1275,7 +1277,9 @@ function geoJSONStyle(tipo, feature, capa) {
     };
   }
 
-  /* 3. catálogo por código numérico */
+  /* 3. catálogo por código numérico. GEO_POTPROD es la rampa fija de 8 pasos:
+        sólo llegan acá los campos sin `estilo`, porque el QML de potencial se
+        guarda incluso en las carpetas planas (upload_mapas.ESTILO_SIEMPRE). */
   if (tipo === 'potencial') {
     var dn = Math.round(parseFloat(p.DN || 0));
     if (dn) return {fillColor: GEO_POTPROD[dn] || '#909090', stroke:false, fillOpacity:opa};
@@ -1606,15 +1610,97 @@ function opaDefault(tipo) {
   return OPA_DEFAULT[tipo] !== undefined ? OPA_DEFAULT[tipo] : 75;
 }
 
-/* Leyendas de gradiente para las capas que las necesitan. */
+/* Leyendas de gradiente para las capas que las necesitan.
+   El valor es [gradiente, etiquetaMin, etiquetaMax], o una función que lo arma a
+   partir de la capa cuando la rampa depende del campo — es el caso de
+   `potencial`, cuya cantidad de clases la decide el k-means. */
 var CAPA_LEYENDA = {
-  'potencial': [POTPROD_GRAD, 'PP 1 (muy alto)', 'PP 8 (muy bajo)'],
+  'potencial': leyendaPotencial,
   'dist_ini':  ['linear-gradient(to right,#1a9641,#a6d96a,#ffffbf,#fdae61,#d7191c)', 'Cerca', 'Lejos'],
   'dist_dis':  ['linear-gradient(to right,#1a9641,#a6d96a,#ffffbf,#fdae61,#d7191c)', 'Cerca', 'Lejos']
 };
 
 function capaPorTipo(tipo) {
   return (C._capas_all || []).filter(function(c){ return c.tipo === tipo; })[0] || null;
+}
+
+/* ── Paleta de Potencial Productivo ───────────────────
+   El equipo GIS clasifica el potencial con k-means y en el QML interpola la
+   rampa verde→rojo sobre las N clases que salieron (5 a 8 según el campo), con
+   los extremos anclados en #1a9641 y #d7191c. O sea que la paleta es propia de
+   cada campo: GEO_POTPROD, que es la rampa fija de 8 pasos, sólo coincide con
+   los campos que efectivamente tienen 8 clases.
+
+   La verdad es `capas_gis.estilo` (la simbología del QML que sube el uploader),
+   que es también lo que pinta el mapa en geoJSONStyle. Estas funciones la
+   aplican a los gráficos y a la leyenda para que no se despeguen. */
+
+/* {clase:int -> color} del QML de este campo. {} si la capa no trae estilo. */
+function paletaPotencial() {
+  var capa = capaPorTipo('potencial');
+  var cats = (capa && capa.estilo && capa.estilo.categorias) || [];
+  var out  = {};
+  cats.forEach(function(c) {
+    var n = parseInt(c.valor, 10);
+    if (n && c.fill) out[n] = c.fill;
+  });
+  return out;
+}
+
+/* Número de clase de un item de potencial_productivo.clases / restaurar.clases.
+   El JSONB que escribe import_metricas trae `clase`; el legacy de los campos
+   que todavía salen del Excel NO lo trae, sólo el label "Pot. Prod. N" — mismo
+   criterio que sortByPPNum. */
+function clasePP(item) {
+  if (item && item.clase !== undefined && item.clase !== null) return +item.clase;
+  var d = String((item && item.label) || '').replace(/[^0-9]/g, '');
+  return d ? parseInt(d, 10) : 0;
+}
+
+/* Pisa el color guardado en el JSONB con el del QML cuando el campo lo trae.
+   No muta: devuelve copias, igual que sinCeros / conTotal / sortByPPNum. */
+function conPaletaPP(clases) {
+  var pal = paletaPotencial();
+  return (clases || []).map(function(x) {
+    var col = pal[clasePP(x)];
+    if (!col || col === x.color) return x;
+    var y = {};
+    for (var k in x) { if (x.hasOwnProperty(k)) y[k] = x[k]; }
+    y.color = col;
+    return y;
+  });
+}
+
+/* Etiqueta de un extremo de la rampa. Los QML nuevos traen el calificativo
+   ("1 - muy alto", "5 - muy bajo"); los viejos, sólo el número desnudo. */
+function etiquetaPP(cat) {
+  var l = String(cat.label || '').trim();
+  return /[^0-9\s]/.test(l) ? l : 'PP ' + (cat.valor || l);
+}
+
+/* Gradiente + extremos del slider de la capa `potencial`: un stop por clase del
+   QML, en orden de clase. Nada de esto se puede hardcodear — la rampa fija de 8
+   stops decía "PP 8 (muy bajo)" hasta en los campos de 5 clases. */
+function leyendaPotencial(capa) {
+  var cats = ((capa && capa.estilo && capa.estilo.categorias) || [])
+    .filter(function(c){ return parseInt(c.valor, 10) && c.fill; })
+    .sort(function(a, b){ return parseInt(a.valor, 10) - parseInt(b.valor, 10); });
+
+  if (cats.length > 1) {
+    var stops = cats.map(function(c){ return c.fill; }).join(',');
+    return ['linear-gradient(to right,' + stops + ')',
+            etiquetaPP(cats[0]), etiquetaPP(cats[cats.length - 1])];
+  }
+
+  /* Sin estilo del QML (campos que todavía no se re-subieron): la rampa fija,
+     pero recortada a las clases que el campo realmente tiene. */
+  var n = ((C.potencial_productivo || {}).clases || []).reduce(function(m, x) {
+    return Math.max(m, clasePP(x));
+  }, 0);
+  if (n < 2) return ['', '', ''];
+  var fijos = [];
+  for (var i = 1; i <= n; i++) fijos.push(GEO_POTPROD[i] || '#909090');
+  return ['linear-gradient(to right,' + fijos.join(',') + ')', 'PP 1', 'PP ' + n];
 }
 
 /* Devuelve [{tipo, capa}] sólo con las capas que existen para este campo. */
@@ -1969,6 +2055,7 @@ function mkSecLayerFrames(tipos) {
   return capasExistentes(tipos).map(function(item) {
     var c    = item.capa;
     var leg  = CAPA_LEYENDA[item.tipo] || ['', c.leyenda_min || '', c.leyenda_max || ''];
+    if (typeof leg === 'function') leg = leg(c);
     return mkLayerFrame(item.tipo, c.nombre || item.tipo, c.subtitulo || '',
                         leg[0], leg[1], leg[2], true, opaDefault(item.tipo));
   }).join('');
@@ -2264,7 +2351,8 @@ function initChartsForSec(id) {
     mkBar('chart-pi-bar', labelsCortos(nz), nz.map(function(x){return x.ha;}), nz.map(function(x){return x.color;}), true, labelsFull(nz));
 
   } else if (id === 'potencial') {
-    var pp = sinCeros(d.potencial_productivo.clases);
+    /* conPaletaPP: los colores los manda el QML del campo, no el JSONB. */
+    var pp = conPaletaPP(sinCeros(d.potencial_productivo.clases));
     mkDonut('chart-pp-donut', labelsCortos(pp), pp.map(function(x){return x.pct;}), pp.map(function(x){return x.color;}), labelsFull(pp));
     buildTable('tbl-pp', conTotal(pp), 'Pot. Prod.', 'Ha.');
     var ppOrd = sortByPPNum(pp);
@@ -2277,7 +2365,9 @@ function initChartsForSec(id) {
     mkBar('chart-mf-bar', labelsCortos(nzMf), nzMf.map(function(x){return x.ha;}), nzMf.map(function(x){return x.color;}), true, labelsFull(nzMf));
 
   } else if (id === 'restaurar') {
-    var re = sinCeros(d.restaurar.clases);
+    /* Las áreas a restaurar se desglosan por clase de potencial, así que llevan
+       la misma paleta del QML de `potencial` que la sección anterior. */
+    var re = conPaletaPP(sinCeros(d.restaurar.clases));
     mkDonut('chart-re-donut', labelsCortos(re), re.map(function(x){return x.pct;}), re.map(function(x){return x.color;}), labelsFull(re));
     buildTable('tbl-re', conTotal(re, d.restaurar.total_ha), 'Pot. Prod.', 'Ha. a restaurar');
     var reOrd = sortByPPNum(re);
