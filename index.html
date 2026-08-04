@@ -194,7 +194,9 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 .chart-wrap    { position:relative; height:160px; }
 .chart-wrap-sm { position:relative; height:100px; }
 .chart-wrap-imp { position:relative; height:120px; }
-.gauge-wrap    { position:relative; height:110px; display:flex; justify-content:center; }
+/* 124px, no 110: mkGauge reserva ~28px de padding vertical para las etiquetas
+   de la escala (ver el comentario ahí). Con 110 el arco quedaba en 82px. */
+.gauge-wrap    { position:relative; height:124px; display:flex; justify-content:center; }
 
 /* ── Home (portada editorial) ───────────────────────── */
 /* La portada ocupa siempre ~55% del ancho del área de contenido (no un máximo
@@ -405,10 +407,44 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
 .kpi-sub { font-size:10px; color:var(--muted); text-align:center; }
 /* simulador */
 .nat-sim { width:100%; margin-top:12px; border-top:1px solid var(--border); padding-top:10px; }
-.nat-sim-label { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); text-align:center; margin-bottom:5px; }
-.nat-sim-row { display:flex; align-items:center; gap:6px; }
-.nat-sim-row input[type=range] { flex:1; accent-color:var(--acc); cursor:pointer; }
-.nat-sim-val { font-size:11px; font-weight:700; color:var(--acc); white-space:nowrap; min-width:48px; text-align:right; }
+.nat-sim-label { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); text-align:center; margin-bottom:7px; }
+/* El riel, el relleno y la marca del cero viven dentro de .nat-sim-bar, que
+   está insetada media pastilla (7px) a cada lado. Así su 0%–100% coincide
+   exactamente con el recorrido del manejador y la marca del cero cae donde
+   realmente se detiene la pastilla — con porcentajes sobre el ancho total
+   quedaría corrida hasta 7px, que a esta escala se nota. */
+.nat-sim-track { position:relative; height:22px; }
+.nat-sim-bar   { position:absolute; left:7px; right:7px; top:50%; transform:translateY(-50%); height:5px; border-radius:3px; background:#e1e7d8; }
+.nat-sim-fill  { position:absolute; top:0; bottom:0; border-radius:3px; }
+.nat-sim-zero  { position:absolute; top:50%; transform:translate(-50%,-50%); width:2px; height:12px; border-radius:1px; background:#98a88a; }
+.nat-sim-track input[type=range] {
+  position:absolute; left:0; top:0; width:100%; height:22px; margin:0; padding:0;
+  background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer;
+}
+.nat-sim-track input[type=range]:focus { outline:none; }
+.nat-sim-track input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow:0 0 0 3px rgba(90,171,40,.35); }
+.nat-sim-track input[type=range]::-webkit-slider-runnable-track { height:22px; background:transparent; border:none; }
+.nat-sim-track input[type=range]::-moz-range-track { height:22px; background:transparent; border:none; }
+/* --nat-thumb lo setea pintarSliderNat() sobre el input; los pseudo-elementos
+   heredan las custom properties del host, así que alcanza con una sola regla
+   por motor en vez de tres clases de estado. */
+.nat-sim-track input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; box-sizing:border-box; width:14px; height:14px; margin-top:4px;
+  border-radius:50%; background:#fff; border:2.5px solid var(--nat-thumb,#98a88a);
+  box-shadow:0 1px 3px rgba(0,0,0,.28); cursor:pointer;
+}
+.nat-sim-track input[type=range]::-moz-range-thumb {
+  box-sizing:border-box; width:14px; height:14px;
+  border-radius:50%; background:#fff; border:2.5px solid var(--nat-thumb,#98a88a);
+  box-shadow:0 1px 3px rgba(0,0,0,.28); cursor:pointer;
+}
+.nat-sim-ends { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-top:4px; }
+/* Delta al lado del número grande: verde si suma naturaleza, rojo si resta. */
+.kpi-big-row { display:flex; align-items:baseline; justify-content:center; gap:8px; width:100%; }
+.nat-delta { font-size:14px; font-weight:700; white-space:nowrap; }
+.nat-delta.pos  { color:var(--acc); }
+.nat-delta.neg  { color:var(--red); }
+.nat-delta.zero { color:var(--muted); opacity:.5; }
 
 /* ── Misc map overlays ──────────────────────────────── */
 .sec-map-title {
@@ -727,7 +763,7 @@ select.admin-select { padding-right:20px; }
       <i class="fa-solid fa-circle-info"></i><span class="nav-label">Info Gral.</span>
     </div>
     <div class="nav-item" data-sec="eco" onclick="showSec('eco')">
-      <i class="fa-solid fa-leaf"></i><span class="nav-label">Ecorregiones</span>
+      <i class="fa-solid fa-leaf"></i><span class="nav-label">Ecorregión</span>
     </div>
     <div class="nav-item" data-sec="paisaje-ini" onclick="showSec('paisaje-ini')">
       <i class="fa-solid fa-map"></i><span class="nav-label">Paisaje Inicial</span>
@@ -901,15 +937,22 @@ select.admin-select { padding-right:20px; }
           <div class="kpi-big" id="kpi-nat-dis">—</div>
         </div>
         <div class="impact-card" style="display:flex;flex-direction:column;justify-content:center;align-items:center">
-          <div class="kpi-big" id="kpi-nat-rest">—</div>
+          <div class="kpi-big-row">
+            <span class="kpi-big" id="kpi-nat-rest">—</span>
+            <span class="nat-delta zero" id="nat-var-delta">±0 Ha</span>
+          </div>
           <div class="kpi-sub">Áreas a Restaurar (Ha)</div>
           <div class="nat-sim">
-            <div class="nat-sim-label">Simular variación</div>
-            <div class="nat-sim-row">
-              <input type="range" id="nat-var-slider" min="0" max="200" value="0" step="1"
+            <div class="nat-sim-label">Simular variación · Ha. de Naturaleza</div>
+            <div class="nat-sim-track">
+              <div class="nat-sim-bar">
+                <span class="nat-sim-fill" id="nat-sim-fill"></span>
+                <span class="nat-sim-zero" id="nat-sim-zero"></span>
+              </div>
+              <input type="range" id="nat-var-slider" min="-30" max="50" value="0" step="1"
                 oninput="updateNatVar(+this.value)">
-              <span class="nat-sim-val" id="nat-var-val">+0 Ha</span>
             </div>
+            <div class="nat-sim-ends"><span id="nat-sim-min">-30 Ha</span><span id="nat-sim-max">+50 Ha</span></div>
           </div>
         </div>
         <div class="impact-card">
@@ -2226,6 +2269,38 @@ function mkGauge(id, val, maxVal) {
   var band  = Math.floor(val / (maxVal / steps));
   var color = scaleColors[Math.min(band, scaleColors.length - 1)];
 
+  /* El arco se satura en maxVal; el número de abajo (kpi-*) sigue subiendo.
+     Sin este tope el gauge REBOTA: el dataset es [val, maxVal - val], y arriba
+     de maxVal el segundo valor se va a negativo. Chart.js totaliza en valor
+     absoluto, así que el denominador pasa a ser |val| + |maxVal - val| =
+     2*val - maxVal y el arco pintado se ACHICA a medida que el valor crece
+     (medido: 25% -> 180°, 28% -> 162.6°, 41.6% -> 128.7°, tendiendo a 90°).
+     Es alcanzable de sobra — Don Orfel arranca en 23.56% y con el simulador
+     en +50 Ha llega a 41.6%. */
+  var arcoVal = Math.min(val, maxVal);
+
+  /* Las etiquetas de la escala las dibuja el plugin AFUERA de outerRadius, así
+     que Chart.js no las ve al medir y hay que reservarles el lugar a mano con
+     layout.padding — es lo único que le achica el radio al arco.
+
+     Sin esto, al ensancharse la tarjeta el radio crecía hasta que el centro del
+     arco quedaba pegado al borde inferior del canvas (medido: canvas 282x110,
+     cy=110, outerR=100) y se cortaban "0%"/"25%" abajo y "10%"/"15%" arriba.
+     No se ve en tarjetas angostas porque ahí manda el ancho y Chart.js centra
+     el arco a lo alto, dejando margen de arriba y de abajo por accidente.
+
+     PAD_TOP sale de la etiqueta más alta, que está a 72° (sen = .95):
+       cy - 0.95*(outerR + LBL_R) - mediaAlturaTexto >= 0.
+     Con el alto de .gauge-wrap (124px) da >= 15; 18 deja aire.
+     PAD_BOT sólo cubre media línea de texto: 0% y 25% se dibujan sobre cy.
+     Los extremos no necesitan PAD_X extra porque van alineados hacia adentro
+     (textAlign left/right), pero las intermedias sí salen un poco. */
+  var LBL_R     = 15;   /* radio extra de una etiqueta común */
+  var LBL_R_TGT = 18;   /* el de la marca objetivo (20%) */
+  var PAD_TOP   = 18;
+  var PAD_BOT   = 10;
+  var PAD_X     = LBL_R + 3;
+
   var scalePlugin = {
     id: 'gaugeScale',
     afterDraw: function(chart) {
@@ -2264,7 +2339,7 @@ function mkGauge(id, val, maxVal) {
         c2d.lineWidth   = isTarget ? 2.5 : 1;
         c2d.stroke();
         /* label — align left at 0%, right at 25%, center elsewhere */
-        var lblR = outerR + (isTarget ? 18 : 15);
+        var lblR = outerR + (isTarget ? LBL_R_TGT : LBL_R);
         c2d.fillStyle   = isTarget ? '#2d8c1a' : '#777';
         c2d.font        = isTarget ? 'bold 9px sans-serif' : 'bold 8px sans-serif';
         c2d.textBaseline = 'middle';
@@ -2277,22 +2352,78 @@ function mkGauge(id, val, maxVal) {
 
   chartReg[id] = new Chart(ctx, {
     type: 'doughnut',
-    data: { datasets: [{ data: [val, maxVal - val], backgroundColor: [color, '#e8ede4'], borderWidth: 0, circumference: 180, rotation: 270 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, layout: { padding: { top: 10, left: 16, right: 16 } } },
+    data: { datasets: [{ data: [arcoVal, maxVal - arcoVal], backgroundColor: [color, '#e8ede4'], borderWidth: 0, circumference: 180, rotation: 270 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, layout: { padding: { top: PAD_TOP, bottom: PAD_BOT, left: PAD_X, right: PAD_X } } },
     plugins: [scalePlugin]
   });
 }
 
+/* ── Simulador de naturaleza ──────────────────────────
+   El 0 del slider es lo que AgroDesign propone; a la derecha el cliente aplica
+   más hectáreas de las sugeridas, a la izquierda menos. El valor está en Ha de
+   naturaleza (restaurar una hectárea más suma una hectárea de naturaleza), y es
+   lo que se muestra en verde o rojo al lado del número de la tarjeta. */
+var NAT_SIM_MIN = -30, NAT_SIM_MAX = 50;
+
+/* El extremo negativo se recorta a lo que el campo efectivamente restaura: no
+   se puede dejar de restaurar más de lo propuesto, y sin el tope un campo de
+   pocas Ha a restaurar caería por debajo de su paisaje inicial. */
+function natSimRango() {
+  var i = C.impacto_naturaleza || {};
+  var rest = Math.round(i.areas_restaurar_ha || 0);
+  return { min: -Math.min(-NAT_SIM_MIN, rest), max: NAT_SIM_MAX };
+}
+
+function natDeltaLabel(v) {
+  var d = document.getElementById('nat-var-delta'); if (!d) return;
+  d.textContent = (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v) + ' Ha';
+  d.className   = 'nat-delta ' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero');
+}
+
+/* Riel, relleno y marca del cero. Todo va en porcentajes planos porque
+   .nat-sim-bar ya está insetada media pastilla (ver el CSS). */
+function pintarSliderNat(v) {
+  var sl = document.getElementById('nat-var-slider'); if (!sl) return;
+  var min = +sl.min, max = +sl.max, span = (max - min) || 1;
+  var f0 = (0 - min) / span * 100;
+  var fv = (v - min) / span * 100;
+  var zero = document.getElementById('nat-sim-zero');
+  if (zero) zero.style.left = f0 + '%';
+  var fill = document.getElementById('nat-sim-fill');
+  if (fill) {
+    fill.style.left       = Math.min(f0, fv) + '%';
+    fill.style.width      = Math.abs(fv - f0) + '%';
+    fill.style.background = v < 0 ? 'var(--red)' : 'var(--acc)';
+  }
+  sl.style.setProperty('--nat-thumb', v > 0 ? 'var(--acc)' : v < 0 ? 'var(--red)' : '#98a88a');
+}
+
+/* Rango, etiquetas y estética en la posición inicial. No toca el tacómetro:
+   lo dibuja initChartsForSec y lo actualiza updateNatVar en cada movimiento. */
+function resetNatSim() {
+  var sl = document.getElementById('nat-var-slider'); if (!sl) return;
+  var r = natSimRango();
+  sl.min = r.min; sl.max = r.max; sl.value = 0;
+  var mn = document.getElementById('nat-sim-min');
+  var mx = document.getElementById('nat-sim-max');
+  if (mn) mn.textContent = r.min + ' Ha';
+  if (mx) mx.textContent = '+' + r.max + ' Ha';
+  natDeltaLabel(0);
+  pintarSliderNat(0);
+}
+
 function updateNatVar(addHa) {
-  var valEl = document.getElementById('nat-var-val');
-  if (valEl) valEl.textContent = '+' + addHa + ' Ha';
+  natDeltaLabel(addHa);
+  pintarSliderNat(addHa);
   var i = C.impacto_naturaleza;
   if (!i || !i.naturaleza_disenio_pct || !i.naturaleza_total) return;
   var baseHa   = i.naturaleza_total.disenio || 0;
   var basePct  = i.naturaleza_disenio_pct;
   if (!basePct) return;
   var totalCampoHa = baseHa / (basePct / 100);
-  var newPct = Math.round(((baseHa + addHa) / totalCampoHa) * 1000) / 10;
+  /* Math.max(0, ...): el tope de natSimRango ya lo evita, pero un JSONB con
+     areas_restaurar_ha inflado respecto de naturaleza_total lo dejaría pasar. */
+  var newPct = Math.round((Math.max(0, baseHa + addHa) / totalCampoHa) * 1000) / 10;
   document.getElementById('kpi-nat-var').textContent = newPct + '%';
   mkGauge('gauge-nat-var', newPct, 25);
 }
@@ -2382,14 +2513,10 @@ function initChartsForSec(id) {
     mkBarPair('chart-in-tam', i.tamano_prom_parches.inicial, i.tamano_prom_parches.disenio);
     mkGauge('gauge-nat-act', i.naturaleza_actual_pct,  25);
     mkGauge('gauge-nat-dis', i.naturaleza_disenio_pct, 25);
-    /* simulador: gauge parte desde el diseño, slider ajusta Ha adicionales */
+    /* simulador: el gauge parte del diseño (el 0 del slider) y resetNatSim
+       deja el manejador ahí, con el riel y la marca del cero ya pintados. */
     mkGauge('gauge-nat-var', i.naturaleza_disenio_pct, 25);
-    var sldr = document.getElementById('nat-var-slider');
-    if (sldr) {
-      var maxSldr = Math.max(Math.round(i.areas_restaurar_ha || 200), 50);
-      sldr.max = maxSldr; sldr.value = 0;
-      document.getElementById('nat-var-val').textContent = '+0 Ha';
-    }
+    resetNatSim();
 
   } else if (id === 'impacto-prod') {
     var ip = d.impacto_produccion;
@@ -2777,9 +2904,9 @@ function refreshFullSecs() {
   set('kpi-nat-act',  fmtPct(inat.naturaleza_actual_pct));
   set('kpi-nat-dis',  fmtPct(inat.naturaleza_disenio_pct));
   set('kpi-nat-rest', inat.areas_restaurar_ha != null ? Math.round(inat.areas_restaurar_ha) : '—');
-  /* reset simulador al cambiar campo */
-  var sldr = document.getElementById('nat-var-slider');
-  if (sldr) { sldr.value = 0; document.getElementById('nat-var-val').textContent = '+0 Ha'; }
+  /* reset simulador al cambiar campo: el rango depende de areas_restaurar_ha,
+     así que hay que recalcularlo, no sólo volver el manejador a 0. */
+  resetNatSim();
   set('kpi-nat-var', fmtPct(inat.naturaleza_disenio_pct));
 }
 
