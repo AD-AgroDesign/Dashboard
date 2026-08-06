@@ -2711,7 +2711,7 @@ async function afterLogin(session) {
   }
 
   var res2 = await _sb.from('campos')
-    .select('id, nombre, provincia, clientes(nombre)')
+    .select('id, nombre, provincia, created_at, clientes(nombre)')
     .order('nombre');
   if (res2.error) throw res2.error;
   allCampos = (res2.data || []).map(function(c) {
@@ -2719,7 +2719,8 @@ async function afterLogin(session) {
       id:             c.id,
       campo:          c.nombre,
       nombre_cliente: (c.clientes && c.clientes.nombre) ? c.clientes.nombre : c.nombre,
-      provincia:      c.provincia
+      provincia:      c.provincia,
+      created_at:     c.created_at    /* sólo para elegir el campo por defecto */
     };
   }).sort(function(a, b) {
     var nc = a.nombre_cliente.localeCompare(b.nombre_cliente, 'es');
@@ -2746,9 +2747,32 @@ async function afterLogin(session) {
   document.getElementById('client-switcher').classList.add('visible');
   buildSwitcher();
 
-  if (allCampos.length > 0) await fetchCampoData(allCampos[0].id);
+  var _def = campoPorDefecto();
+  if (_def) await fetchCampoData(_def.id);
 
   programarAutoColapso();   /* recién acá el dashboard es usable: ahí corren los 4s */
+}
+
+/* Campo que se abre al entrar (2026-08-06).
+   Antes era `allCampos[0]`, o sea el primero alfabéticamente: para un admin, que
+   ve los 20 campos, siempre BAYKA / Santa Margarita — que además está entre los
+   que quedaron a medio cargar, así que el dashboard abría siempre en una pantalla
+   incompleta. Un cliente no lo notaba porque RLS le deja ver sólo los suyos.
+
+   Se usa `created_at` y NO `updated_at`, aunque "el último cargado" suene a lo
+   segundo: el trigger `campos_updated_at` toca la fila en cualquier UPDATE, así
+   que un `import_metricas --apply` sobre un cliente viejo (pasó con Carmen y
+   Monte Hermoso el 2026-08-03) lo pondría de default — justo uno de los campos
+   incompletos que esto viene a evitar. `created_at` apunta siempre a la última
+   alta, que es la entrega más nueva y completa.
+
+   El orden del desplegable sigue siendo alfabético: acá sólo cambia cuál se abre.
+   En empate gana el primero alfabéticamente, para que sea determinista. */
+function campoPorDefecto() {
+  if (!allCampos.length) return null;
+  return allCampos.reduce(function(a, b) {
+    return (b.created_at || '') > (a.created_at || '') ? b : a;
+  });
 }
 
 /* == Dropdown dinamico == */
