@@ -90,6 +90,9 @@ body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(
   overflow:hidden; transition:all .15s;
 }
 .nav-item:hover { background:rgba(255,255,255,.08); color:#fff; }
+/* #nav-visor3d es un <a>: sin esto hereda el subrayado del navegador. El color
+   ya lo fija .nav-item, así que alcanza con la decoración. */
+a.nav-item, a.nav-item:hover { text-decoration:none; }
 .nav-item.active { color:var(--gold2); border-left-color:var(--gold2); background:rgba(255,255,255,.06); }
 .nav-item i { font-size:13px; flex-shrink:0; width:18px; text-align:center; }
 .nav-label { overflow:hidden; white-space:nowrap; }
@@ -785,6 +788,16 @@ select.admin-select { padding-right:20px; }
     <div class="nav-item" id="nav-balance" data-sec="balance" onclick="showSec('balance')" style="display:none">
       <i class="fa-solid fa-chart-pie"></i><span class="nav-label">Balance</span>
     </div>
+    <!-- Plataforma externa: abre en otra pestaña y tiene su propio login, por eso
+         el enlace es fijo. Va último, después de Balance (que sólo ven los admins).
+         Es un <a> de verdad, no un div con onclick: así andan el click del medio,
+         "abrir en pestaña nueva" y el ctrl+click. Sin data-sec a propósito —
+         showSec() no lo encuentra y nunca lo marca activo, que es lo correcto:
+         no es una sección de este dashboard. -->
+    <a class="nav-item" id="nav-visor3d" href="https://3d.agrodesign.site/"
+       target="_blank" rel="noopener">
+      <i class="fa-solid fa-cube"></i><span class="nav-label">Visualizador 3D</span>
+    </a>
     </div><!-- /nav-scroll -->
     <div class="nav-item" id="nav-perfil" data-sec="perfil" onclick="showSec('perfil')" style="border-top:1px solid rgba(255,255,255,.1)">
       <i class="fa-solid fa-user"></i><span class="nav-label">Mi Perfil</span>
