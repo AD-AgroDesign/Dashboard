@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>AgroDesign — Mapa de intervenciones</title>
+<!--
+  Página pensada para embeberse con <iframe> en la landing de AgroDesign:
+
+    <iframe src="https://dashboard.agrodesign.site/mapa-publico.html"
+            title="Mapa de intervenciones de AgroDesign" loading="lazy"
+            style="width:100%;height:min(70vh,620px);border:0;border-radius:12px"></iframe>
+
+  Toda la lógica vive en embed/agrodesign-mapa.js — este archivo es sólo el
+  contenedor a pantalla completa. Sin login, sin nav, sin Chart.js.
+-->
+<style>
+  html, body { height:100%; margin:0; background:#eef3e9; }
+  #mapa { width:100%; height:100%; }
+</style>
+</head>
+<body>
+  <div id="mapa" data-agrodesign-mapa></div>
+  <script src="embed/agrodesign-mapa.js"></script>
+</body>
+</html>

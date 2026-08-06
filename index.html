@@ -722,6 +722,11 @@ select.admin-select { padding-right:20px; }
 .punto-origen { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:2px 6px; border-radius:10px; }
 .punto-origen.campo { background:#e7f3dc; color:var(--hdr); }
 .punto-origen.libre { background:#fef0d6; color:#9a6b12; }
+.punto-origen.web { background:#dcecfb; color:#1f5f9e; margin-left:4px; }
+/* Check "publicar en la web": el <span> es la aclaración de qué implica */
+.punto-check { display:block; margin-top:12px; font-size:11.5px; font-weight:700; color:var(--text); cursor:pointer; }
+.punto-check input { margin-right:5px; vertical-align:middle; accent-color:var(--acc); }
+.punto-check span { display:block; margin:3px 0 0 19px; font-size:10px; font-weight:400; line-height:1.35; color:var(--muted); }
 .admin-del-btn { padding:5px 9px; border:1.5px solid var(--border); border-radius:6px; background:#fff; color:var(--red); font-size:11px; font-weight:700; cursor:pointer; }
 .admin-del-btn:hover { border-color:var(--red); background:#fef2f2; }
 @media (max-width:720px){ .punto-form-grid{ grid-template-columns:1fr; } }
@@ -1061,6 +1066,9 @@ select.admin-select { padding-right:20px; }
                   <div style="flex:1"><label class="perfil-label">Ha. totales</label><input class="coord-input" id="punto-hatotal" type="number" step="any" placeholder="0"></div>
                   <div style="flex:1"><label class="perfil-label">Ha. naturaleza</label><input class="coord-input" id="punto-hanat" type="number" step="any" placeholder="0"></div>
                 </div>
+                <label class="punto-check"><input type="checkbox" id="punto-publico" checked> Publicar en el mapa de la web
+                  <span>Sale en agrodesign.site sin nombre ni cliente, con la ubicación aproximada. Siempre se ve en el Balance.</span>
+                </label>
                 <div style="display:flex;gap:8px;margin-top:12px">
                   <button class="admin-save-btn" id="punto-save-btn" onclick="savePunto()">Guardar</button>
                   <button class="admin-reload-btn" onclick="closePuntoForm()" style="margin-bottom:0">Cancelar</button>
@@ -3435,18 +3443,29 @@ async function _fetchCamposMetrics() {
   return (r.data || []).map(_campoMetrics);
 }
 
+/* Columnas de mapa_puntos. `publico` la agrega add_mapa_publico.sql; si el HTML
+   se deploya antes de correr ese SQL, PostgREST responde 400 y el Balance se
+   quedaría sin pines, así que se reintenta sin esa columna (ver _puntosSinPublico). */
+var PUNTOS_COLS     = 'id,campo_id,nombre,cliente,lat,lng,ha_total,ha_naturaleza,publico';
+var PUNTOS_COLS_OLD = 'id,campo_id,nombre,cliente,lat,lng,ha_total,ha_naturaleza';
+var _puntosSinPublico = false;
+function _puntosCols() { return _puntosSinPublico ? PUNTOS_COLS_OLD : PUNTOS_COLS; }
+
 /* Carga los puntos; si la tabla está vacía, auto-importa los campos una vez */
 async function loadPuntosData() {
-  var r = await _sb.from('mapa_puntos')
-    .select('id,campo_id,nombre,cliente,lat,lng,ha_total,ha_naturaleza').order('nombre');
+  var r = await _sb.from('mapa_puntos').select(_puntosCols()).order('nombre');
+  if (r.error && !_puntosSinPublico && /publico/.test(r.error.message || '')) {
+    console.warn('Puntos: falta la columna `publico` (correr output_sql/add_mapa_publico.sql).');
+    _puntosSinPublico = true;
+    r = await _sb.from('mapa_puntos').select(PUNTOS_COLS_OLD).order('nombre');
+  }
   if (r.error) { console.error('Puntos:', r.error); if (!puntosData) puntosData = []; return; }
   var rows = r.data || [];
   if (rows.length === 0) {
     var camp = await _fetchCamposMetrics();
     var toIns = camp.map(_puntoFromCampo);
     if (toIns.length) {
-      var ins = await _sb.from('mapa_puntos').insert(toIns)
-        .select('id,campo_id,nombre,cliente,lat,lng,ha_total,ha_naturaleza');
+      var ins = await _sb.from('mapa_puntos').insert(toIns).select(_puntosCols());
       if (!ins.error) rows = ins.data || [];
       else console.error('Auto-import puntos:', ins.error);
     }
@@ -3509,6 +3528,7 @@ function renderPuntosTable(rows) {
   }
   var body = rows.map(function(p){
     var origen = p.campo_id ? '<span class="punto-origen campo">Campo</span>' : '<span class="punto-origen libre">Manual</span>';
+    if (!_puntosSinPublico && p.publico !== false) origen += '<span class="punto-origen web" title="Sale en el mapa público de la web">Web</span>';
     var coord = (typeof p.lat === 'number' && typeof p.lng === 'number')
       ? (p.lat.toFixed(4)+', '+p.lng.toFixed(4))
       : '<span style="color:var(--red)">sin ubicar</span>';
@@ -3544,6 +3564,10 @@ function openPuntoForm(id) {
   document.getElementById('punto-lng').value     = (p && p.lng != null) ? p.lng : '';
   document.getElementById('punto-hatotal').value = (p && p.ha_total != null) ? p.ha_total : '';
   document.getElementById('punto-hanat').value   = (p && p.ha_naturaleza != null) ? p.ha_naturaleza : '';
+  /* Punto nuevo: se publica por defecto, igual que el DEFAULT TRUE de la columna.
+     Sin el SQL corrido el check no tiene dónde guardarse, así que se esconde. */
+  document.getElementById('punto-publico').checked = p ? (p.publico !== false) : true;
+  document.querySelector('.punto-check').style.display = _puntosSinPublico ? 'none' : 'block';
   var btn = document.getElementById('punto-save-btn'); btn.textContent = 'Guardar'; btn.style.background = '';
   var lat = (p && p.lat != null) ? parseFloat(p.lat) : null;
   var lng = (p && p.lng != null) ? parseFloat(p.lng) : null;
@@ -3610,6 +3634,7 @@ async function savePunto() {
   var rec = { nombre:nombre, cliente:cliente, lat:lat, lng:lng,
               ha_total:      htV === '' ? null : parseFloat(htV),
               ha_naturaleza: hnV === '' ? null : parseFloat(hnV) };
+  if (!_puntosSinPublico) rec.publico = document.getElementById('punto-publico').checked;
   btn.disabled = true; btn.textContent = '...';
   var r = id ? await _sb.from('mapa_puntos').update(rec).eq('id', id)
              : await _sb.from('mapa_puntos').insert(rec);
