@@ -383,15 +383,44 @@ a.nav-item, a.nav-item:hover { text-decoration:none; }
 /* ── Ecorregiones ───────────────────────────────────── */
 #full-eco { display:none; background:var(--bg); overflow:hidden; }
 #full-eco.active { display:flex; flex-direction:row; }
-@media (max-width:720px) { #full-eco.active { flex-direction:column; } }
-.eco-map-col { flex:0 0 auto; display:flex; align-items:center; justify-content:center; background:#edf0e8; border-right:1px solid var(--border); padding:16px; overflow:hidden; }
-.eco-mapa-img { height:100%; width:auto; max-height:100%; object-fit:contain; display:block; }
-.eco-cards-col { flex:1 1 0; min-width:0; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+/* Los 18 mapas de ecorregión son 800x1016 (vertical, ratio .787) — verificado
+   sobre los archivos de stormstudio.com.ar. El ancho del mapa sale del alto, así
+   que NO se achica cuando angosta la ventana: hasta 2026-08-06 la columna de
+   texto se comía todo el faltante y a 900px de ancho quedaba en 83px, ilegible.
+   El piso lo pone ahora el min-width de .eco-cards-col: el mapa cede primero. */
+.eco-map-col { flex:0 1 auto; min-width:0; display:flex; align-items:center; justify-content:center; background:#edf0e8; border-right:1px solid var(--border); padding:16px; overflow:hidden; }
+/* max-* en vez de height:100% fijo: con width/height auto el navegador encoge
+   la imagen para entrar en la caja conservando el ratio, la limite el alto (el
+   caso normal) o el ancho (cuando la columna se achica). */
+.eco-mapa-img { max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; display:block; }
+.eco-cards-col { flex:1 1 300px; min-width:280px; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+
+/* Móvil: una sola columna. El mapa ocupa todo el ancho (sin padding lateral, de
+   borde a borde) y las tarjetas caen abajo, una tras otra. Scrollea la sección
+   entera, no cada columna por su lado — por eso el overflow-y acá y el visible
+   en las tarjetas.
+   Antes de este bloque el mapa se dibujaba a su tamaño natural (800x1016) dentro
+   de una columna de 323px: quedaba en left:-187 y el overflow:hidden te dejaba
+   viendo la franja del medio. */
+@media (max-width:720px) {
+  #full-eco { overflow-y:auto; }
+  #full-eco.active { flex-direction:column; }
+  .eco-map-col {
+    flex:0 0 auto; width:100%; padding:0;
+    border-right:none; border-bottom:1px solid var(--border);
+  }
+  .eco-mapa-img { width:100%; height:auto; max-width:none; max-height:none; }
+  .eco-cards-col { flex:0 0 auto; min-width:0; overflow-y:visible; }
+}
 .eco-card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
 .eco-card h4 { font-size:12px; font-weight:700; color:var(--hdr); margin-bottom:6px; }
 .eco-card p  { font-size:11.5px; line-height:1.65; color:#444; }
 .eco-pn { font-size:11px; color:var(--muted); line-height:2; }
-.eco-pn a { color:var(--muted); text-decoration:none; font-size:10.5px; display:block; line-height:1.9; }
+/* Las URLs de parques son una sola palabra de ~66 caracteres: sin esto no cortan
+   nunca y desbordan la columna (325px de texto en 203px de caja), lo que le mete
+   un scroll horizontal a la tarjeta. Se notaba poco mientras la columna era
+   ancha; con la columna angosta de tablet y móvil es evidente. */
+.eco-pn a { color:var(--muted); text-decoration:none; font-size:10.5px; display:block; line-height:1.9; overflow-wrap:anywhere; }
 .eco-pn a:hover { color:var(--hdr); text-decoration:underline; }
 /* Viz panel — Ecorregiones */
 .eco-vp-info { padding:4px 2px 6px; }
@@ -1444,8 +1473,8 @@ function toggleVizPanel() {
    El panel se abre como siempre —así el usuario ve que existe y dónde está la
    pestaña para volver a abrirlo— y se retira solo a los pocos segundos para
    dejar el mapa despejado.
-   Sólo en secciones de mapa: en Home y Ecorregiones el panel ES el contenido
-   (las descargas, la ficha de la ecorregión), ocultarlo lo dejaría inaccesible. */
+   Aplica a las secciones de mapa y a las de PANEL_AUTOOCULTA_EXTRA. Queda afuera
+   Home, cuyo panel ni siquiera se abre solo (ver PANEL_INICIA_CERRADO). */
 var VIZ_AUTOHIDE_MS = 4000;
 var _autoHideT      = null;
 var _autoHideWired  = false;
@@ -1466,9 +1495,16 @@ function wireAutoOcultar() {
   _autoHideWired = true;
 }
 
+/* Secciones sin mapa cuyo panel igual se retira solo. Ecorregión entró el
+   2026-08-06 a pedido: su contenido (el mapa de la ecorregión y las tarjetas de
+   texto) vive en la sección, no en el panel, así que los 300px del panel le
+   comían el lugar igual que en una sección de mapa. */
+var PANEL_AUTOOCULTA_EXTRA = { 'eco': true };
+
 function programarAutoOcultar(id) {
   cancelarAutoOcultar();
-  if (!isMapSec[id] || !hasPanel[id]) return;
+  if (!hasPanel[id]) return;
+  if (!isMapSec[id] && !PANEL_AUTOOCULTA_EXTRA[id]) return;
   wireAutoOcultar();
   var secProgramada = id;
   _autoHideT = setTimeout(function() {
