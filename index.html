@@ -861,8 +861,11 @@ select.admin-select { padding-right:20px; }
          "abrir en pestaña nueva" y el ctrl+click. Sin data-sec a propósito —
          showSec() no lo encuentra y nunca lo marca activo, que es lo correcto:
          no es una sección de este dashboard. -->
+    <!-- OCULTO PROVISORIAMENTE (2026-08-07): la plataforma 3D está en obra y no
+         queremos accesos mientras tanto. Para volver a mostrarlo, borrar el
+         style="display:none" de la línea de abajo. Nada de JS lo toca. -->
     <a class="nav-item" id="nav-visor3d" href="https://3d.agrodesign.site/"
-       target="_blank" rel="noopener">
+       target="_blank" rel="noopener" style="display:none">
       <i class="fa-solid fa-earth-americas"></i><span class="nav-label">Visualizador 3D</span>
     </a>
     </div><!-- /nav-scroll -->
