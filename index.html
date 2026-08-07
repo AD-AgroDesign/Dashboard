@@ -2669,9 +2669,10 @@ function initNavTooltips() {
 }
 
 /* == Supabase Config == */
-/* TODO: Reemplazar con URL y ANON KEY de tu proyecto Supabase */
+/* Clave publishable (reemplaza a la anon key legacy, migración 2026-08-07).
+   Mismos privilegios bajos: la RLS se comporta igual. Es pública por diseño. */
 var SUPABASE_URL      = 'https://ivucpzmedseoanjrwutn.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2dWNwem1lZHNlb2FuanJ3dXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzIyODcsImV4cCI6MjA5NzgwODI4N30.fDk8fujjqyga6jRM9JxrGfwmlRl96O2PoYfQedHKTLE';
+var SUPABASE_ANON_KEY = 'sb_publishable_JCCcFphCzigm36R1bFIzDw_Xk0M1wbm';
 var _sb = null;
 
 var swOpen          = false;

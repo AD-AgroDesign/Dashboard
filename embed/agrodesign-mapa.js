@@ -17,7 +17,8 @@
   'use strict';
 
   var SB_URL  = 'https://ivucpzmedseoanjrwutn.supabase.co';
-  var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2dWNwem1lZHNlb2FuanJ3dXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzIyODcsImV4cCI6MjA5NzgwODI4N30.fDk8fujjqyga6jRM9JxrGfwmlRl96O2PoYfQedHKTLE';
+  /* Clave publishable (reemplaza a la anon key legacy, migración 2026-08-07) */
+  var SB_ANON = 'sb_publishable_JCCcFphCzigm36R1bFIzDw_Xk0M1wbm';
   var ENDPOINT = SB_URL + '/rest/v1/v_mapa_publico?select=lat,lng,ha_total,ha_naturaleza';
 
   var LEAFLET_CSS = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
