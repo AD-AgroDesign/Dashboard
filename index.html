@@ -1271,9 +1271,13 @@ var GEO_NO_AGR  = {'camino':'#000000','instalaciones':'#acacac','parche-le':'#d6
    macroambientes en el paisaje multifuncional (311-313 sobre secano,
    331-333 sobre ganadería). Los tres macroambientes comparten color.
 
-   `30` (bajo en recuperación) llegó el 2026-08-11 con Carmen; es productiva
+   `30` (bajo en recuperación) llegó el 2026-08-11 con El Carmen; es productiva
    como el resto de los 3X. Comparte el #e3c16f de `47` (médano), que hoy sólo
-   usa Don Orfel — ver la nota larga en agro_catalogo.py. */
+   usa Don Orfel — ver la nota larga en agro_catalogo.py.
+
+   `32` (agrícola con riego) y `45` (cuerpo de agua) llegaron el 2026-08-13 con
+   El Avatí y La Esther. `45` comparte el #5454fc de `44` (curso de agua), tal
+   como vino el QML; hoy no hay ningún campo que traiga los dos. */
 var CAT_RASTER = {
   '11':  {fill:'#ec5086', stroke:'#9d1141'},
   '12':  {fill:'#ec5086', stroke:null},
@@ -1281,6 +1285,7 @@ var CAT_RASTER = {
   '22':  {fill:'#fb9a99', stroke:null},
   '30':  {fill:'#e3c16f', stroke:null},
   '31':  {fill:'#33a02c', stroke:null},
+  '32':  {fill:'#18ffbe', stroke:null},
   '33':  {fill:'#33a02c', stroke:null},
   '311': {fill:'#1a9641', stroke:null},
   '312': {fill:'#60b856', stroke:null},
@@ -1292,6 +1297,7 @@ var CAT_RASTER = {
   '42':  {fill:'#000000', stroke:null},
   '43':  {fill:'#b0b0b0', stroke:null},
   '44':  {fill:'#5454fc', stroke:null},
+  '45':  {fill:'#5454fc', stroke:null},
   '46':  {fill:'#aa5500', stroke:null},
   '47':  {fill:'#e3c16f', stroke:null}
 };
@@ -2808,7 +2814,7 @@ async function afterLogin(session) {
 
    Se usa `created_at` y NO `updated_at`, aunque "el último cargado" suene a lo
    segundo: el trigger `campos_updated_at` toca la fila en cualquier UPDATE, así
-   que un `import_metricas --apply` sobre un cliente viejo (pasó con Carmen y
+   que un `import_metricas --apply` sobre un cliente viejo (pasó con El Carmen y
    Monte Hermoso el 2026-08-03) lo pondría de default — justo uno de los campos
    incompletos que esto viene a evitar. `created_at` apunta siempre a la última
    alta, que es la entrega más nueva y completa.
