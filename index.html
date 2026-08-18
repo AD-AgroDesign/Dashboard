@@ -136,7 +136,15 @@ a.nav-item, a.nav-item:hover { text-decoration:none; }
 #map-split {
   position:absolute; inset:0; display:none;
   grid-template-columns:1fr 1fr; grid-template-rows:auto 1fr;
+  transition:left .3s ease;   /* acompaña el deslizamiento del viz-panel */
 }
+/* El viz-panel flota sobre el #map-area, así que en las secciones de un solo
+   mapa se come un borde. Acá se come medio contenido: los dos mapas son una
+   comparación lado a lado y el de Paisaje Inicial queda casi entero debajo.
+   Con el panel abierto el split arranca 300px más a la derecha y los dos mapas
+   se reparten lo que queda; la divisoria se recentra sola porque el grid es
+   1fr 1fr. La clase la pone ajustarSplitIP(). */
+#map-split.panel-abierto { left:300px; }
 .dual-map-label {
   background:var(--hdr); color:#fff; font-size:11px; font-weight:700;
   padding:8px 14px; text-align:center; border-bottom:1px solid var(--acc);
@@ -1440,6 +1448,13 @@ function toggleSidebar() {
   } else {
     tab.style.left = w + 'px';
   }
+  /* El #map-area cambia de ancho sin que haya resize de ventana, así que
+     Leaflet no se entera solo. Va dos veces: la primera acompaña la transición
+     del sidebar, y la segunda decide si el split cede — eso depende del ancho
+     final, que durante los .3s todavía no existe (el sidebar transiciona su
+     width, así que clientWidth devuelve el de antes). */
+  ajustarSplitIP();
+  setTimeout(ajustarSplitIP, ANIM_MS + 20);
 }
 
 /* ── Auto-colapso del nav en pantallas angostas ────────
@@ -1505,6 +1520,7 @@ function openVizPanel() {
   tab.innerHTML = '&#10094;';  /* ❮ — click to hide panel */
   tab.classList.add('visible');
   vizOpen = true;
+  ajustarSplitIP();
 }
 
 function closeVizPanel() {
@@ -1514,6 +1530,7 @@ function closeVizPanel() {
   tab.style.left = w + 'px';
   tab.innerHTML = '&#10095;';  /* ❯ — click to show panel */
   vizOpen = false;
+  ajustarSplitIP();
 }
 
 function toggleVizPanel() {
@@ -1639,6 +1656,7 @@ function activateSec(id) {
   if (id === 'impacto-prod') {
     theMapEl.style.display   = 'none';
     mapSplitEl.style.display = 'grid';
+    _ipVistaTocada = false;   /* cada visita arranca encuadrándose sola */
     titleEl.style.display    = 'none';
     badgeEl.style.display    = 'none';
     if (!mapInited[id]) {
@@ -1930,6 +1948,71 @@ function encuadrarIP() {
   ipSyncing = previo;
 }
 
+/* ── El split cede el ancho del viz-panel ──────────────
+   Sólo en Impacto Producción: es la única sección donde el panel no tapa un
+   borde del mapa sino la mitad del contenido. El CSS hace el trabajo (ver
+   #map-split.panel-abierto); acá se decide cuándo.
+
+   Abajo de IP_SPLIT_MIN no cede: dos mapas de menos de 220px no sirven para
+   comparar nada y es preferible el panel tapando, que además se auto-oculta a
+   los 4s. En un teléfono de 375px ceder dejaría 11px por mapa. */
+var IP_SPLIT_MIN = 440;
+
+function ajustarSplitIP() {
+  if (currentSec !== 'impacto-prod') return;
+  var el = document.getElementById('map-split'),
+      ma = document.getElementById('map-area');
+  if (!el || !ma) return;
+  el.classList.toggle('panel-abierto',
+                      vizOpen && (ma.clientWidth - PANEL_W) >= IP_SPLIT_MIN);
+  refrescarMapasIP();
+}
+
+/* Leaflet no se entera solo de que su contenedor cambió de tamaño, y acá cambia
+   durante .3s. Por eso el invalidateSize va en cada frame mientras dura la
+   transición y no una sola vez al final: si no, los tiles se quedan quietos y
+   el mapa se ve recortado —o con un hueco, al agrandarse— todo ese rato.
+
+   Al asentarse se re-encuadra, que es lo que hace que el contenido use el área
+   nueva en vez de quedar con el zoom de la anterior. Se saltea si el usuario ya
+   eligió su vista: ahí manda él (ver _ipVistaTocada). */
+var _ipRaf = null, _ipFinT = null;
+function refrescarMapasIP() {
+  if (!ipMapIni || !ipMapDis) return;
+  if (_ipRaf) cancelAnimationFrame(_ipRaf);
+  clearTimeout(_ipFinT);
+  var fin = Date.now() + ANIM_MS;
+  (function paso() {
+    _ipRaf = (Date.now() < fin) ? requestAnimationFrame(paso) : null;
+    remedirMapasIP();
+  })();
+  /* El cierre NO puede quedar colgado del rAF: con la pestaña en segundo plano
+     los frames no se componen y el loop de arriba no corre ni una vez, así que
+     los mapas se quedarían con el tamaño viejo hasta que algo más los toque. */
+  _ipFinT = setTimeout(function() {
+    _ipFinT = null;
+    remedirMapasIP();
+    if (!_ipVistaTocada) encuadrarIP();
+  }, ANIM_MS + 60);
+}
+
+function remedirMapasIP() {
+  /* Los dos cambian de tamaño igual, así que no hay nada que propagar y sí un
+     rebote entre paneles que evitar. */
+  var previo = ipSyncing;
+  ipSyncing = true;
+  ipMapIni.invalidateSize({pan:false, animate:false});
+  ipMapDis.invalidateSize({pan:false, animate:false});
+  ipSyncing = previo;
+}
+
+/* Se levanta con el primer drag o zoom hecho a mano y sobrevive hasta que se
+   sale de la sección (activateSec lo baja). El guard de ipSyncing es lo que
+   distingue la interacción real del setView con el que encuadrarIP() y el sync
+   entre paneles mueven los mapas por su cuenta. */
+var _ipVistaTocada = false;
+function marcarVistaIPTocada() { if (!ipSyncing) _ipVistaTocada = true; }
+
 /* Panes con z-index fijo: el orden visual no puede depender de cuál GeoJSON
    termina de bajar primero. agro0 es el de más arriba. */
 function ensurePanes(map) {
@@ -2059,12 +2142,30 @@ function initMapsIP() {
   }
   sync(ipMapIni, ipMapDis);
   sync(ipMapDis, ipMapIni);
+  [ipMapIni, ipMapDis].forEach(function(m) {
+    m.on('dragstart', marcarVistaIPTocada);
+    m.on('zoomstart', marcarVistaIPTocada);
+  });
   ipMapIni.on('mousemove', onMapMouseMove);
   ipMapIni.on('mouseout',  onMapMouseOut);
   ipMapDis.on('mousemove', onMapMouseMove);
   ipMapDis.on('mouseout',  onMapMouseOut);
   setTimeout(function() { encuadrarIP(); }, 150);
+  /* Los mapas se crean 50ms después de entrar en la sección, o sea que el
+     ajustarSplitIP() de openVizPanel() no los encontró y se fue sin medir nada:
+     el único encuadre sería el de arriba, a mitad de la transición del split y
+     contra un ancho que todavía se está moviendo (10% de más, medido). Este
+     vuelve a medir y re-encuadra ya con el layout quieto. */
+  ajustarSplitIP();
 }
+
+/* Achicar la ventana puede cruzar IP_SPLIT_MIN en cualquier dirección. */
+var _ipRzT = null;
+window.addEventListener('resize', function() {
+  if (currentSec !== 'impacto-prod') return;
+  clearTimeout(_ipRzT);
+  _ipRzT = setTimeout(ajustarSplitIP, 200);
+});
 
 /* ── Viz Panel builder ──────────────────────────────── */
 var panelTitles = {
