@@ -732,6 +732,14 @@ select.admin-select { padding-right:20px; }
 #balance-map .leaflet-tile-pane { filter:hue-rotate(58deg) saturate(.72) brightness(1.03); }
 .bal-pin { width:18px; height:18px; border-radius:50% 50% 50% 0; background:var(--acc); border:2px solid #fff; transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,.4); }
 .bal-pin::after { content:''; position:absolute; top:5px; left:5px; width:6px; height:6px; border-radius:50%; background:var(--hdr); }
+/* Pin de un grupo de puntos solapados (ver agruparPuntos / BAL_CLUSTER_PX). Es el
+   mismo pin, 26px en vez de 18: el puntito oscuro de 6px no da para un numero de dos
+   digitos, asi que crece a disco con el numero adentro. El rotate(45deg) contra-rota
+   el -45deg de la gota; sin eso el numero sale de costado. Blanco sobre --hdr y no
+   --hdr sobre el verde claro: eso ultimo da contraste ~3:1 y a 10px no se lee. */
+.bal-pin-grupo { width:26px; height:26px; position:relative; cursor:pointer; }
+.bal-pin-grupo::after { display:none; }
+.bal-pin-num { position:absolute; inset:3px; border-radius:50%; background:var(--hdr); color:#fff; display:flex; align-items:center; justify-content:center; font:700 10px/1 'Segoe UI',Arial,sans-serif; transform:rotate(45deg); }
 #balance-map .leaflet-popup-content-wrapper { border-radius:9px; box-shadow:0 4px 16px rgba(0,0,0,.25); }
 #balance-map .leaflet-popup-content { margin:11px 14px; font-family:'Segoe UI',Arial,sans-serif; }
 .bal-pop-name { font-size:13px; font-weight:800; color:var(--hdr); margin-bottom:5px; }
@@ -3360,6 +3368,7 @@ async function saveUser(userId) {
 var balanceData = null;   // campos con métricas derivadas (KPIs/charts/tabla)
 var puntosData  = null;   // puntos del mapa (tabla mapa_puntos) — NO afectan KPIs
 var balanceMap  = null;   // instancia Leaflet
+var balPinLayer = null;   // capa de pines/grupos del Balance (ver agruparPuntos)
 
 function _fmt(n) { return (n || 0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function _short(s) { s = s || ''; return s.length > 13 ? s.slice(0, 12) + '…' : s; }
@@ -3550,6 +3559,62 @@ function renderBalanceTable(m) {
   else document.getElementById('balance-table').insertAdjacentHTML('beforeend', '<tfoot>'+foot+'</tfoot>');
 }
 
+/* == Agrupado de pines solapados ==================================================
+   Con 21 puntos y el encuadre inicial (maxZoom 11) los campos de la Pampa se tapan
+   entre si: no se pueden contar ni clickear los de abajo. Cuando dos centros quedan
+   a menos de BAL_CLUSTER_PX se dibuja un solo pin con el numero de puntos adentro,
+   y al acercar el zoom el grupo se parte solo.
+
+   No se usa Leaflet.markercluster a proposito: son 21 puntos, esto son 20 lineas, y
+   la copia gemela de embed/agrodesign-mapa.js se sirve a terceros (no puede sumar
+   dos CSS y un JS mas de CDN a la landing). Si se toca esto, replicar alla a mano. */
+var BAL_CLUSTER_PX = 26;   // distancia entre centros (px) por debajo de la cual se agrupa
+
+/* Greedy de una pasada, determinista: recorre en el orden que viene (puntosData ya
+   viene ordenado por nombre) y absorbe en cada grupo lo que caiga cerca del centroide.
+   Proyecta con map.project(latlng, zoom) y no con latLngToLayerPoint: da pixeles
+   absolutos del zoom actual, invariantes al paneo, asi que el agrupado depende solo
+   del zoom (por eso alcanza con escuchar 'zoomend'). */
+function agruparPuntos(map, items) {
+  var z = map.getZoom(), n = items.length, tomado = new Array(n), grupos = [];
+  var px = items.map(function(it){ return map.project([it.lat, it.lng], z); });
+  var lim = BAL_CLUSTER_PX * BAL_CLUSTER_PX;
+  for (var i = 0; i < n; i++) {
+    if (tomado[i]) continue;
+    tomado[i] = true;
+    var g = [items[i]], cx = px[i].x, cy = px[i].y;
+    for (var j = i + 1; j < n; j++) {
+      if (tomado[j]) continue;
+      var dx = px[j].x - cx, dy = px[j].y - cy;
+      if (dx*dx + dy*dy >= lim) continue;
+      tomado[j] = true; g.push(items[j]);
+      cx += (px[j].x - cx) / g.length;      /* centroide incremental */
+      cy += (px[j].y - cy) / g.length;
+    }
+    var lat = 0, lng = 0;
+    g.forEach(function(it){ lat += it.lat; lng += it.lng; });
+    grupos.push({ items:g, lat:lat/g.length, lng:lng/g.length });   /* el pin va al medio del monton */
+  }
+  return grupos;
+}
+
+/* Click en un pin agrupado: encuadra sus puntos. Sin el maxZoom:11 del encuadre
+   inicial, que es justo lo que impediria que el grupo se abra. */
+function zoomAGrupo(map, g) {
+  var b = L.latLngBounds(g.items.map(function(it){ return [it.lat, it.lng]; }));
+  var zMax = map.getMaxZoom();
+  /* Grupo degenerado: todos los puntos en la misma coordenada. fitBounds no separaria
+     nada y el click quedaria colgado. Pasa de verdad en el mapa publico, que redondea
+     lat/lng a 2 decimales (~1 km): dos campos cercanos caen en el mismo punto y es
+     correcto que sigan agrupados. */
+  if (b.getNorth() === b.getSouth() && b.getEast() === b.getWest()) {
+    if (map.getZoom() >= zMax) return;
+    map.setView(b.getCenter(), Math.min(map.getZoom() + 2, zMax));
+    return;
+  }
+  map.fitBounds(b, { padding:[60,60], maxZoom:zMax });
+}
+
 function initBalanceMap(m) {
   if (balanceMap) { balanceMap.remove(); balanceMap = null; }
   balanceMap = L.map('balance-map', { scrollWheelZoom:true, worldCopyJump:true, zoomControl:true, zoomSnap:0.25, zoomDelta:0.25, wheelPxPerZoomLevel:120 });
@@ -3558,7 +3623,7 @@ function initBalanceMap(m) {
   }).addTo(balanceMap);
 
   var pin = L.divIcon({ className:'', html:'<div class="bal-pin"></div>', iconSize:[18,18], iconAnchor:[9,17], popupAnchor:[0,-16] });
-  var pts = [];
+  var items = [], pts = [];
   (m || []).forEach(function(x){
     var lat = parseFloat(x.lat), lng = parseFloat(x.lng);
     if (isNaN(lat) || isNaN(lng)) return;
@@ -3566,13 +3631,38 @@ function initBalanceMap(m) {
       + (x.cliente ? '<div class="bal-pop-cli">'+x.cliente+'</div>' : '')
       + '<div class="bal-pop-row"><span>Ha. totales</span><span>'+_fmt(x.ha_total)+'</span></div>'
       + '<div class="bal-pop-row"><span>Ha. naturaleza</span><span>'+_fmt(x.ha_naturaleza)+'</span></div>';
-    L.marker([lat, lng], {icon:pin}).addTo(balanceMap).bindPopup(html);
+    items.push({ lat:lat, lng:lng, html:html });
     pts.push([lat, lng]);
   });
 
+  balPinLayer = L.layerGroup().addTo(balanceMap);
+  var firma = null;
+  function pintarPinesBalance() {
+    var gs = agruparPuntos(balanceMap, items);
+    var f = gs.map(function(g){ return g.items.length+'@'+g.lat.toFixed(4)+','+g.lng.toFixed(4); }).join('|');
+    if (f === firma) return;     /* mismo agrupado: no repintar (evita parpadeo y no cierra un popup abierto) */
+    firma = f;
+    balPinLayer.clearLayers();
+    gs.forEach(function(g){
+      if (g.items.length === 1) {
+        L.marker([g.items[0].lat, g.items[0].lng], {icon:pin}).bindPopup(g.items[0].html).addTo(balPinLayer);
+        return;
+      }
+      var ic = L.divIcon({ className:'', iconSize:[26,26], iconAnchor:[13,25],
+        html:'<div class="bal-pin bal-pin-grupo"><span class="bal-pin-num">'+g.items.length+'</span></div>' });
+      L.marker([g.lat, g.lng], {icon:ic, title:g.items.length+' establecimientos'})
+        .on('click', function(){ zoomAGrupo(balanceMap, g); })
+        .addTo(balPinLayer);
+    });
+  }
+
+  /* El encuadre va primero: map.project() necesita que el mapa ya tenga vista. */
   if (pts.length >= 2)      balanceMap.fitBounds(pts, {padding:[40,40], maxZoom:11});
   else if (pts.length === 1) balanceMap.setView(pts[0], 9);
   else                       balanceMap.setView([-38, -63], 4);  // Argentina por defecto
+
+  balanceMap.on('zoomend', pintarPinesBalance);   /* muere con el mapa en el remove() de arriba */
+  pintarPinesBalance();
 
   setTimeout(function(){ if (balanceMap) balanceMap.invalidateSize(); }, 80);
 }

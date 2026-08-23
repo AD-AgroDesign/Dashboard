@@ -33,6 +33,11 @@
     '.admapa-root .leaflet-tile-pane { filter:hue-rotate(58deg) saturate(.72) brightness(1.03); }',
     '.admapa-pin { width:18px; height:18px; border-radius:50% 50% 50% 0; background:#5aab28; border:2px solid #fff; transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,.4); }',
     '.admapa-pin::after { content:""; position:absolute; top:5px; left:5px; width:6px; height:6px; border-radius:50%; background:#2a5218; }',
+    /* pin de un grupo de puntos solapados: el mismo pin, 26px, con el puntito oscuro
+       agrandado a disco y el numero adentro. El rotate(45deg) contra-rota la gota. */
+    '.admapa-pin-grupo { width:26px; height:26px; position:relative; cursor:pointer; }',
+    '.admapa-pin-grupo::after { display:none; }',
+    '.admapa-pin-num { position:absolute; inset:3px; border-radius:50%; background:#2a5218; color:#fff; display:flex; align-items:center; justify-content:center; font:700 10px/1 "Segoe UI",Arial,sans-serif; transform:rotate(45deg); }',
     '.admapa-root .leaflet-popup-content-wrapper { border-radius:9px; box-shadow:0 4px 16px rgba(0,0,0,.25); }',
     '.admapa-root .leaflet-popup-content { margin:11px 14px; font-family:"Segoe UI",Arial,sans-serif; }',
     '.admapa-pop-name { font-size:13px; font-weight:800; color:#2a5218; margin-bottom:7px; }',
@@ -98,6 +103,55 @@
     el.appendChild(d);
   }
 
+  /* == Agrupado de pines solapados ================================================
+     Al encuadre inicial (zoom 3 por el punto de Kenia) los campos de la Pampa se
+     tapan entre si. Cuando dos centros quedan a menos de CLUSTER_PX se dibuja un
+     solo pin con el numero adentro, y al acercar el zoom el grupo se parte solo.
+
+     Duplica a proposito la logica de index.html (agruparPuntos / zoomAGrupo): este
+     archivo se sirve a terceros y no arrastra nada del dashboard. Si cambia alla,
+     replicarlo aca a mano. Tampoco usa Leaflet.markercluster: no vale sumarle dos
+     CSS y un JS mas de CDN a la landing por 21 puntos. */
+  var CLUSTER_PX = 26;
+
+  function agrupar(map, items) {
+    var z = map.getZoom(), n = items.length, tomado = new Array(n), grupos = [];
+    var px = items.map(function (it) { return map.project([it.lat, it.lng], z); });
+    var lim = CLUSTER_PX * CLUSTER_PX;
+    for (var i = 0; i < n; i++) {
+      if (tomado[i]) continue;
+      tomado[i] = true;
+      var g = [items[i]], cx = px[i].x, cy = px[i].y;
+      for (var j = i + 1; j < n; j++) {
+        if (tomado[j]) continue;
+        var dx = px[j].x - cx, dy = px[j].y - cy;
+        if (dx * dx + dy * dy >= lim) continue;
+        tomado[j] = true; g.push(items[j]);
+        cx += (px[j].x - cx) / g.length;      /* centroide incremental */
+        cy += (px[j].y - cy) / g.length;
+      }
+      var lat = 0, lng = 0;
+      g.forEach(function (it) { lat += it.lat; lng += it.lng; });
+      grupos.push({ items: g, lat: lat / g.length, lng: lng / g.length });
+    }
+    return grupos;
+  }
+
+  function zoomAGrupo(map, g) {
+    var b = L.latLngBounds(g.items.map(function (it) { return [it.lat, it.lng]; }));
+    var zMax = map.getMaxZoom();
+    /* Grupo degenerado: todos en la misma coordenada. Aca no es hipotetico —
+       v_mapa_publico redondea lat/lng a 2 decimales (~1 km), asi que dos campos
+       cercanos caen en el mismo punto y es correcto que sigan agrupados; lo que no
+       puede pasar es que el click quede colgado haciendo zoom sin resultado. */
+    if (b.getNorth() === b.getSouth() && b.getEast() === b.getWest()) {
+      if (map.getZoom() >= zMax) return;
+      map.setView(b.getCenter(), Math.min(map.getZoom() + 2, zMax));
+      return;
+    }
+    map.fitBounds(b, { padding: [60, 60], maxZoom: zMax });
+  }
+
   function render(el, L, rows) {
     var map = L.map(el, {
       scrollWheelZoom: false,        // se activa al hacer click: si no, la rueda
@@ -111,7 +165,7 @@
 
     var pin = L.divIcon({ className: '', html: '<div class="admapa-pin"></div>',
                           iconSize: [18, 18], iconAnchor: [9, 17], popupAnchor: [0, -16] });
-    var pts = [];
+    var items = [], pts = [];
     (rows || []).forEach(function (x) {
       var lat = parseFloat(x.lat), lng = parseFloat(x.lng);
       if (isNaN(lat) || isNaN(lng)) return;
@@ -121,13 +175,37 @@
         + '<div class="admapa-pop-row"><span>Ha. totales</span><span>' + fmt(x.ha_total) + '</span></div>'
         + '<div class="admapa-pop-row"><span>Ha. naturaleza</span><span>' + fmt(x.ha_naturaleza) + '</span></div>'
         + '<div class="admapa-pop-note">Ubicación aproximada para resguardar los datos del cliente.</div>';
-      L.marker([lat, lng], { icon: pin }).addTo(map).bindPopup(html);
+      items.push({ lat: lat, lng: lng, html: html });
       pts.push([lat, lng]);
     });
 
+    var capa = L.layerGroup().addTo(map), firma = null;
+    function pintarPines() {
+      var gs = agrupar(map, items);
+      var f = gs.map(function (g) { return g.items.length + '@' + g.lat.toFixed(4) + ',' + g.lng.toFixed(4); }).join('|');
+      if (f === firma) return;   /* mismo agrupado: no repintar (no cierra un popup abierto) */
+      firma = f;
+      capa.clearLayers();
+      gs.forEach(function (g) {
+        if (g.items.length === 1) {
+          L.marker([g.items[0].lat, g.items[0].lng], { icon: pin }).bindPopup(g.items[0].html).addTo(capa);
+          return;
+        }
+        var ic = L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 25],
+          html: '<div class="admapa-pin admapa-pin-grupo"><span class="admapa-pin-num">' + g.items.length + '</span></div>' });
+        L.marker([g.lat, g.lng], { icon: ic, title: g.items.length + ' establecimientos' })
+          .on('click', function () { zoomAGrupo(map, g); })
+          .addTo(capa);
+      });
+    }
+
+    /* El encuadre va primero: map.project() necesita que el mapa ya tenga vista. */
     if (pts.length >= 2)       map.fitBounds(pts, { padding: [40, 40], maxZoom: 11 });
     else if (pts.length === 1) map.setView(pts[0], 9);
     else                       map.setView([-38, -63], 4);   // Argentina por defecto
+
+    map.on('zoomend', pintarPines);
+    pintarPines();
 
     /* Rueda: sólo después de un click dentro del mapa */
     map.on('click', function () { map.scrollWheelZoom.enable(); });
