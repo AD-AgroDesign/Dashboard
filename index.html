@@ -730,14 +730,16 @@ select.admin-select { padding-right:20px; }
 #balance-map { width:100%; height:clamp(280px,44vh,620px); border-radius:9px; background:#eef3e9; z-index:1; }
 /* tinte verde claro de la paleta sobre el basemap minimalista */
 #balance-map .leaflet-tile-pane { filter:hue-rotate(58deg) saturate(.72) brightness(1.03); }
-.bal-pin { width:18px; height:18px; border-radius:50% 50% 50% 0; background:var(--acc); border:2px solid #fff; transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,.4); }
-.bal-pin::after { content:''; position:absolute; top:5px; left:5px; width:6px; height:6px; border-radius:50%; background:var(--hdr); }
+/* position:relative es lo que centra al puntito y al numero del pin agrupado:
+   sin el, el ::after se posiciona contra el .leaflet-marker-icon. No sacarlo. */
+.bal-pin { width:18px; height:18px; border-radius:50% 50% 50% 0; background:var(--acc); border:2px solid #fff; transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,.4); position:relative; }
+.bal-pin::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:var(--hdr); }
 /* Pin de un grupo de puntos solapados (ver agruparPuntos / BAL_CLUSTER_PX). Es el
    mismo pin, 26px en vez de 18: el puntito oscuro de 6px no da para un numero de dos
    digitos, asi que crece a disco con el numero adentro. El rotate(45deg) contra-rota
    el -45deg de la gota; sin eso el numero sale de costado. Blanco sobre --hdr y no
    --hdr sobre el verde claro: eso ultimo da contraste ~3:1 y a 10px no se lee. */
-.bal-pin-grupo { width:26px; height:26px; position:relative; cursor:pointer; }
+.bal-pin-grupo { width:26px; height:26px; cursor:pointer; }   /* el position:relative lo pone .bal-pin */
 .bal-pin-grupo::after { display:none; }
 .bal-pin-num { position:absolute; inset:3px; border-radius:50%; background:var(--hdr); color:#fff; display:flex; align-items:center; justify-content:center; font:700 10px/1 'Segoe UI',Arial,sans-serif; transform:rotate(45deg); }
 #balance-map .leaflet-popup-content-wrapper { border-radius:9px; box-shadow:0 4px 16px rgba(0,0,0,.25); }

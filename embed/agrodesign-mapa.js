@@ -31,11 +31,13 @@
     '.admapa-root .leaflet-container { width:100%; height:100%; background:#eef3e9; font:12px/1.4 "Segoe UI",Arial,sans-serif; }',
     /* tinte verde de la paleta sobre el basemap minimalista (igual que el Balance) */
     '.admapa-root .leaflet-tile-pane { filter:hue-rotate(58deg) saturate(.72) brightness(1.03); }',
-    '.admapa-pin { width:18px; height:18px; border-radius:50% 50% 50% 0; background:#5aab28; border:2px solid #fff; transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,.4); }',
-    '.admapa-pin::after { content:""; position:absolute; top:5px; left:5px; width:6px; height:6px; border-radius:50%; background:#2a5218; }',
+    /* position:relative centra el puntito y el numero del pin agrupado: sin el, el
+       ::after se posiciona contra el .leaflet-marker-icon y queda corrido. */
+    '.admapa-pin { width:18px; height:18px; border-radius:50% 50% 50% 0; background:#5aab28; border:2px solid #fff; transform:rotate(-45deg); box-shadow:0 2px 6px rgba(0,0,0,.4); position:relative; }',
+    '.admapa-pin::after { content:""; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:#2a5218; }',
     /* pin de un grupo de puntos solapados: el mismo pin, 26px, con el puntito oscuro
        agrandado a disco y el numero adentro. El rotate(45deg) contra-rota la gota. */
-    '.admapa-pin-grupo { width:26px; height:26px; position:relative; cursor:pointer; }',
+    '.admapa-pin-grupo { width:26px; height:26px; cursor:pointer; }',   /* el position:relative lo pone .admapa-pin */
     '.admapa-pin-grupo::after { display:none; }',
     '.admapa-pin-num { position:absolute; inset:3px; border-radius:50%; background:#2a5218; color:#fff; display:flex; align-items:center; justify-content:center; font:700 10px/1 "Segoe UI",Arial,sans-serif; transform:rotate(45deg); }',
     '.admapa-root .leaflet-popup-content-wrapper { border-radius:9px; box-shadow:0 4px 16px rgba(0,0,0,.25); }',
