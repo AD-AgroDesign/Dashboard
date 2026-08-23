@@ -1307,7 +1307,8 @@ var CAT_RASTER = {
   '44':  {fill:'#5454fc', stroke:null},
   '45':  {fill:'#5454fc', stroke:null},
   '46':  {fill:'#aa5500', stroke:null},
-  '47':  {fill:'#e3c16f', stroke:null}
+  '47':  {fill:'#e3c16f', stroke:null},
+  '48':  {fill:'#e3c16f', stroke:null}
 };
 
 /* Clasifica texto libre de UNIDAD (el equipo GIS a veces entrega variantes como
@@ -2409,9 +2410,30 @@ function mkBar(id, labels, values, colors, horiz, fullLabels) {
   });
 }
 
+/* Alto de la fila de la leyenda a `font:9 / padding:6` — medido, no estimado:
+   con 10 entradas Chart.js reporta una columna de 150px. */
+var LEG_FILA_H  = 15;
+var LEG_HOLGURA = 10;     /* para que la última fila no quede al ras */
+var DONUT_H_MIN = 160;    /* el height de .chart-wrap; no bajar de ahí */
+
+/* La leyenda va `position:'right'` y Chart.js la arma en UNA columna mientras le
+   entre a lo alto. Si no le entra, desborda a una SEGUNDA columna que no cabe en
+   el ancho del canvas y queda recortada: se ven los cuadraditos de color sin
+   etiqueta al lado. Pasaba con 11 categorías o más — hoy Frente-Planta-Quinta-Lima
+   y Nikunihue (11), y La Esther, Los Plátanos y Santa Margarita (12).
+   El arreglo es darle al contenedor el alto que la leyenda necesita, así nunca
+   hay segunda columna por muchas clases que traiga un campo. No afecta al donut:
+   su diámetro lo limita el ancho (la leyenda se lleva la mitad), no el alto. */
+function ajustarAltoDonut(canvas, nItems) {
+  var wrap = canvas.parentElement;
+  if (!wrap || !wrap.classList.contains('chart-wrap')) return;
+  wrap.style.height = Math.max(DONUT_H_MIN, nItems * LEG_FILA_H + LEG_HOLGURA) + 'px';
+}
+
 function mkDonut(id, labels, values, colors, fullLabels) {
   var ctx = document.getElementById(id); if (!ctx) return;
   if (chartReg[id]) chartReg[id].destroy();
+  ajustarAltoDonut(ctx, labels.length);
   chartReg[id] = new Chart(ctx, {
     type:'doughnut',
     data:{labels:labels, datasets:[{data:values, backgroundColor:colors, borderWidth:1, borderColor:'#fff'}]},
