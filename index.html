@@ -1936,6 +1936,39 @@ function encuadrar(map, bounds) {
   map.options.zoomSnap = 0;
   map.fitBounds(b, {paddingTopLeft:FIT_PAD_TL, paddingBottomRight:FIT_PAD_BR, animate:false});
   map.options.zoomSnap = snap;
+  aplicarLimitesDemo(map);
+}
+
+/* ── Campo demo: bloqueo de zoom-out y paneo ──────────────
+   En la replica fantasma el contexto es lo que delata al cliente real: alejando
+   el zoom aparecen el pueblo, las rutas y el trazado de la zona. Se bloquea el
+   zoom-out al encuadre del campo y el paneo a sus limites.
+
+   El paneo va SIEMPRE junto con el zoom: restringir solo el zoom no sirve de
+   nada, porque desde el mismo nivel se llega arrastrando hasta el pueblo mas
+   cercano.
+
+   Se llama al final de encuadrar() y de encuadrarIP(), no una sola vez al crear
+   el mapa: el ancho util cambia con el sidebar y con el #viz-panel, y
+   getBoundsZoom depende del tamano del contenedor.
+
+   No hace falta deshacer los limites al cambiar de campo: fetchCampoData hace
+   theMap.remove() / ipMapIni.remove() / ipMapDis.remove() y los mapas se
+   recrean limpios. balanceMap y _pickMap quedan afuera a proposito (admin-only). */
+var DEMO_ZOOM_HOLGURA = 0.5;    /* escalones de 0,25 por debajo del encuadre */
+var DEMO_PAN_PAD      = 0.10;   /* ~670 m de contexto alrededor del campo */
+
+function aplicarLimitesDemo(map) {
+  if (!map || !C || !C.es_demo || !BOUNDS) return;
+  var b = L.latLngBounds(BOUNDS);
+  /* El padding NO es opcional: encuadrar() hace fitBounds con FIT_PAD_TL/BR, o
+     sea que su zoom es MAS BAJO que un getBoundsZoom pelado. Calculandolo sin
+     padding el minZoom quedaria por encima del encuadre, Leaflet lo recortaria
+     y el campo se veria cortado en cada seccion. */
+  var pad = L.point(FIT_PAD_TL[0] + FIT_PAD_BR[0], FIT_PAD_TL[1] + FIT_PAD_BR[1]);
+  map.setMinZoom(map.getBoundsZoom(b, false, pad) - DEMO_ZOOM_HOLGURA);
+  map.setMaxBounds(b.pad(DEMO_PAN_PAD));
+  map.options.maxBoundsViscosity = 1.0;
 }
 
 /* Encuadre de los dos mapas de Impacto Producción, que son una comparación
@@ -1956,6 +1989,10 @@ function encuadrarIP() {
   ipMapDis.options.zoomSnap = 0;
   ipMapDis.setView(ipMapIni.getCenter(), ipMapIni.getZoom(), {animate:false});
   ipMapDis.options.zoomSnap = snap;
+  /* ipMapIni ya los recibio dentro de encuadrar(); este no pasa por ahi. Va
+     antes de restaurar ipSyncing para que el setMaxBounds, que puede empujar la
+     vista, no se propague al otro panel. */
+  aplicarLimitesDemo(ipMapDis);
   ipSyncing = previo;
 }
 
@@ -2206,23 +2243,36 @@ function buildVizPanel(id) {
 
   if (id === 'home') {
     var dl = C.descargas || {};
+    /* El campo demo se carga sin kmz/ ni pdf_gf/ (make_campo_ejemplo.py los
+       saltea: son los dos archivos que llevan el nombre real y las coordenadas
+       exactas, y que ademas quedan en poder de quien los baje). Sin este guard
+       quedarian dos botones con href="#", muertos, que en una presentacion se
+       leen como un error. Manual e Infografia se quedan: son documentos
+       institucionales fijos y no dicen nada del campo. */
+    var esDemo = !!C.es_demo;
     /* "Mapas" y "KMZ / Geo" se unificaron en un solo grupo: la descarga es el
        KMZ que entrega el equipo GIS (subcarpeta kmz/). */
-    html += mkContentFrame('home-dl-mapas', 'Mapas / KMZ / Geo',
-      '<a class="vf-dl-btn" href="'+(dl.geo_url||'#')+'" '+(dl.geo_url?'target="_blank"':'')+'>'+
-      '<i class="fa-solid fa-location-dot"></i>Descargar KMZ</a>');
+    if (!esDemo) {
+      html += mkContentFrame('home-dl-mapas', 'Mapas / KMZ / Geo',
+        '<a class="vf-dl-btn" href="'+(dl.geo_url||'#')+'" '+(dl.geo_url?'target="_blank"':'')+'>'+
+        '<i class="fa-solid fa-location-dot"></i>Descargar KMZ</a>');
+    }
     /* Manual e Infografía son documentos fijos de la empresa; el Mapa de
        Implementación sale de la subcarpeta pdf_gf/ de cada cliente. */
-    html += mkContentFrame('home-dl-impl', 'Implementación',
+    var implBtns =
       '<a class="vf-dl-btn" href="https://drive.google.com/file/d/1d36wqk4dpfR8snD-BxdSoWY8N_yt5G6M/edit" target="_blank">'+
       '<i class="fa-solid fa-book"></i>Descargar Manual</a>'+
       '<a class="vf-dl-btn" href="https://drive.google.com/file/d/1TCcFxGgeZBUTusy3JhQBjXAppDnSGHqj/view" target="_blank">'+
-      '<i class="fa-solid fa-image"></i>Descargar Infografía</a>'+
-      '<a class="vf-dl-btn" href="'+(dl.pdf_gf_url||'#')+'" '+(dl.pdf_gf_url?'target="_blank"':'')+'>'+
-      /* fa-file-pdf NO se puede usar: en Font Awesome 6.5.0 Free su glifo dice
-         "PNG", no "PDF" (verificado 2026-07-31; word/excel/csv sí son correctos,
-         el defecto es sólo de este icono). Ninguno del set Free rotula "PDF". */
-      '<i class="fa-solid fa-map-location-dot"></i>Descargar Mapa de Implementación</a>');
+      '<i class="fa-solid fa-image"></i>Descargar Infografía</a>';
+    if (!esDemo) {
+      implBtns +=
+        '<a class="vf-dl-btn" href="'+(dl.pdf_gf_url||'#')+'" '+(dl.pdf_gf_url?'target="_blank"':'')+'>'+
+        /* fa-file-pdf NO se puede usar: en Font Awesome 6.5.0 Free su glifo dice
+           "PNG", no "PDF" (verificado 2026-07-31; word/excel/csv sí son correctos,
+           el defecto es sólo de este icono). Ninguno del set Free rotula "PDF". */
+        '<i class="fa-solid fa-map-location-dot"></i>Descargar Mapa de Implementación</a>';
+    }
+    html += mkContentFrame('home-dl-impl', 'Implementación', implBtns);
 
   } else if (id === 'implementacion') {
     var dl = C.descargas || {};
@@ -2779,12 +2829,43 @@ function initChartsForSec(id) {
 }
 
 /* ── Coordinate display ─────────────────────────────── */
+/* En el campo demo la capsula no puede mostrar coordenadas, pero tampoco se
+   esconde: cambia de sistema de referencia y pasa a una grilla LOCAL en metros
+   desde el centro del campo ("X +1.240 m  .  Y -380 m").
+
+   Por que esta y no otra: no queda ninguna coordenada global en pantalla, no es
+   invertible sin conocer el centro, y sigue siendo util --permite medir
+   distancias dentro del campo durante una presentacion--, asi que se lee como
+   una funcion deliberada y no como un dato tachado. Ver CLAUDE.md. */
+function coordDemoTxt(map, latlng) {
+  var c = L.latLng(mapCenter[0], mapCenter[1]);
+  /* Cada eje se proyecta por separado sobre el centro: map.distance() da metros
+     sobre el elipsoide y el signo sale del cuadrante. */
+  var dx = map.distance(L.latLng(c.lat, latlng.lng), c) * (latlng.lng >= c.lng ? 1 : -1);
+  var dy = map.distance(L.latLng(latlng.lat, c.lng), c) * (latlng.lat >= c.lat ? 1 : -1);
+  return 'X ' + _metrosTxt(dx) + '  ·  Y ' + _metrosTxt(dy);
+}
+
+/* Redondeado a 10 m: la precision fina no aporta nada a la lectura y redondear
+   baja todavia mas lo que se puede reconstruir mirando la pantalla. */
+function _metrosTxt(m) {
+  var v = Math.round(m / 10) * 10;
+  /* El cero va sin signo: cruzando el eje del centro, "−0 m" se lee como un bug. */
+  if (v === 0) return '0 m';
+  return (v < 0 ? '−' : '+') + Math.abs(v).toLocaleString('es-AR') + ' m';
+}
+
 function onMapMouseMove(e) {
+  var el = document.getElementById('demo-badge');
+  if (!el) return;
+  if (C && C.es_demo) {
+    el.querySelector('span').textContent = coordDemoTxt(e.target, e.latlng);
+    return;
+  }
   var lat = e.latlng.lat, lng = e.latlng.lng;
   var latStr = Math.abs(lat).toFixed(5) + '° ' + (lat >= 0 ? 'N' : 'S');
   var lngStr = Math.abs(lng).toFixed(5) + '° ' + (lng >= 0 ? 'E' : 'O');
-  var el = document.getElementById('demo-badge');
-  if (el) el.querySelector('span').textContent = latStr + '  ·  ' + lngStr;
+  el.querySelector('span').textContent = latStr + '  ·  ' + lngStr;
 }
 
 function onMapMouseOut() {
@@ -3065,6 +3146,11 @@ function buildClientObject(campo, capas) {
     fecha:             campo.fecha || '2026',
     provincia:         campo.provincia || '',
     portada_img_url:   campo.portada_img_url || '',
+    /* Replica fantasma para difusion (Campo Ejemplo). Gobierna el bloqueo de
+       zoom/paneo, la capsula de coordenadas y las descargas de Home. Llega por
+       el select('*') de fetchCampoData, asi que no hay riesgo de orden de
+       deploy en este camino. Ver "Campo Ejemplo" en CLAUDE.md. */
+    es_demo:           !!campo.es_demo,
     info_gral: {
       ecorregion:   campo.info_ecorregion  || '',
       clima:        campo.info_clima        || '',
@@ -3400,10 +3486,37 @@ function _campoMetrics(c) {
   };
 }
 
+/* Campos que entran en el Balance. El select estaba duplicado literal en
+   loadBalance() y _fetchCamposMetrics(); ahora sale de un solo lugar.
+
+   El filtro por es_demo es lo que mantiene a Campo Ejemplo fuera de los KPIs,
+   de los tres graficos, de la tabla y de "Importar campos faltantes". Los KPIs
+   de la landing se filtran aparte, en v_kpis_publicos (add_campo_ejemplo.sql):
+   son dos agregados distintos sobre la misma tabla y hay que tapar los dos.
+
+   El reintento es la misma red que _puntosSinPublico y esta por el mismo
+   motivo: si el HTML se deploya antes de correr el Bloque A de
+   add_campo_ejemplo.sql, PostgREST responde 400 y el Balance se quedaria sin
+   datos. Cubre la ventana entre los dos deploys, no es una forma soportada de
+   quedarse. */
+var CAMPOS_BAL_COLS = 'id,nombre,lat,lng,paisaje_inicial,impacto_naturaleza,'
+                    + 'impacto_produccion,restaurar,clientes(nombre)';
+var _camposSinDemo  = false;
+
+async function _queryCamposBal() {
+  var q = _sb.from('campos').select(CAMPOS_BAL_COLS);
+  if (!_camposSinDemo) q = q.eq('es_demo', false);
+  var r = await q.order('nombre');
+  if (r.error && !_camposSinDemo && /es_demo/.test(r.error.message || '')) {
+    console.warn('Balance: falta la columna `es_demo` (correr output_sql/add_campo_ejemplo.sql).');
+    _camposSinDemo = true;
+    r = await _sb.from('campos').select(CAMPOS_BAL_COLS).order('nombre');
+  }
+  return r;
+}
+
 async function loadBalance() {
-  var r = await _sb.from('campos')
-    .select('id,nombre,lat,lng,paisaje_inicial,impacto_naturaleza,impacto_produccion,restaurar,clientes(nombre)')
-    .order('nombre');
+  var r = await _queryCamposBal();
   if (r.error) {
     console.error('Balance:', r.error);
     var tb = document.querySelector('#balance-table tbody');
@@ -3696,9 +3809,7 @@ function _puntoFromCampo(c) {
 }
 async function _fetchCamposMetrics() {
   if (balanceData) return balanceData;
-  var r = await _sb.from('campos')
-    .select('id,nombre,lat,lng,paisaje_inicial,impacto_naturaleza,impacto_produccion,restaurar,clientes(nombre)')
-    .order('nombre');
+  var r = await _queryCamposBal();
   if (r.error) { console.error('Campos:', r.error); return []; }
   return (r.data || []).map(_campoMetrics);
 }
