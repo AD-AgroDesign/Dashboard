@@ -1231,12 +1231,17 @@ var isMapSec = {
 var mapCenter = [0, 0];
 
 var ANALISIS_GRADIENTS = {
-  'evi':          'linear-gradient(to right,#0a500a,#28aa14,#96d03c,#d8e882)',
+  /* Greens de ColorBrewer, muestreado del QML de EVImean: claro = menor,
+     oscuro = mayor. Antes iba al reves y contradecia al raster. */
+  'evi':          'linear-gradient(to right,#f7fcf5,#aedea7,#37a055,#00441b)',
   'evi_cv':       'linear-gradient(to right,#fff5f0,#fcb480,#dc5032,#a0140a)',
   'ndmi':         'linear-gradient(to right,#c83220,#f0c864,#64c8f0,#1464c8)',
   'mndwi':        'linear-gradient(to right,#f0f0fa,#a0c8f0,#3c82dc,#0a32b4)',
   'dem':          'linear-gradient(to right,#3c8c3c,#a0c850,#e6be50,#c87828)',
-  'twi':          'linear-gradient(to right,#f0d23c,#a0c864,#3c9688,#145064)',
+  /* Blues de ColorBrewer, muestreado del tramo visible del QML de twi
+     (abajo de 0.75 el raster es transparente). Antes era una rampa
+     amarillo-teal que no salia de ningun QML. */
+  'twi':          'linear-gradient(to right,#f7fbff,#abd0e6,#3787c0,#08306b)',
   'ls':           'linear-gradient(to right,#ffffcc,#fedd7f,#fd9d43,#f43d25,#800026)',
   'curvas_nivel': 'linear-gradient(to right,#85b66f,#85b66f)'
 };
