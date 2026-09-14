@@ -2953,6 +2953,7 @@ async function doLogin() {
     var result = await _sb.auth.signInWithPassword({ email: email, password: pass });
     if (result.error) throw result.error;
     await afterLogin(result.data.session);
+    registrarAcceso('login');
   } catch(e) {
     errEl.textContent = e.message || 'Error al ingresar. Verifique sus credenciales.';
     errEl.classList.add('visible');
@@ -2966,6 +2967,23 @@ document.addEventListener('keydown', function(e) {
   var overlay = document.getElementById('login-overlay');
   if (e.key === 'Enter' && overlay && !overlay.classList.contains('hidden')) doLogin();
 });
+
+/* == Registro de accesos (tabla accesos, la lee el informe semanal) ==
+   'login' = entró con contraseña; 'sesion' = volvió con la sesión guardada.
+   La base completa usuario, cliente y rol, y descarta las 'sesion' a menos de
+   30 min de otro ingreso (output_sql/add_accesos.sql); el tope local sólo
+   ahorra el request. Nunca bloquea el ingreso: un error queda en consola.
+   Distinto de ultimo_login/sesiones_count, que siguen para Gestión de Usuarios. */
+var ACCESO_SESION_MS = 30 * 60 * 1000;
+function registrarAcceso(evento) {
+  try {
+    var _ult = parseInt(localStorage.getItem('ad_acceso_ult') || '0', 10);
+    if (evento === 'sesion' && Date.now() - _ult < ACCESO_SESION_MS) return;
+    localStorage.setItem('ad_acceso_ult', String(Date.now()));
+  } catch(e) { /* sin localStorage decide sólo la base */ }
+  _sb.from('accesos').insert({ plataforma: 'dashboard', evento: evento })
+    .then(function(r) { if (r.error) console.warn('No se registró el acceso:', r.error.message); });
+}
 
 /* == Post-login: cargar perfil y campos == */
 async function afterLogin(session) {
@@ -4057,7 +4075,9 @@ document.addEventListener('DOMContentLoaded', function() {
   _sb.auth.getSession().then(function(result) {
     var session = result.data && result.data.session;
     if (session) {
-      afterLogin(session).catch(function(e) { console.error('Session restore error:', e); });
+      afterLogin(session)
+        .then(function() { registrarAcceso('sesion'); })
+        .catch(function(e) { console.error('Session restore error:', e); });
     }
   });
 });
