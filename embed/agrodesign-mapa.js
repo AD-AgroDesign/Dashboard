@@ -24,6 +24,14 @@
   var LEAFLET_CSS = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
   var LEAFLET_JS  = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
 
+  /* Key de CARTO Basemaps (pública por diseño: viaja en la URL de cada tile). Sin
+     key, desde fines de agosto de 2026 los tiles salen con "API KEY REQUIRED"
+     estampado. Restringida a agrodesign.site, www. y dashboard.: desde otro
+     origen, localhost incluido, CARTO responde 403 y el mapa queda sin fondo.
+     Si se rota, actualizar también initBalanceMap() en index.html y la copia
+     de la landing (AD_Web/js/agrodesign-mapa.js). */
+  var CARTO_KEY = 'cb1_3mj7_1_17ca75e190cd9c69101c988d';
+
   /* Paleta del dashboard, literal: fuera de index.html las custom properties
      de :root no existen. --acc / --hdr / --muted / --text / --border. */
   var CSS = [
@@ -164,7 +172,7 @@
       worldCopyJump: true, zoomControl: true,
       zoomSnap: 0.25, zoomDelta: 0.25, wheelPxPerZoomLevel: 120
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
       attribution: '© OpenStreetMap, © CARTO', subdomains: 'abcd', maxZoom: 19
     }).addTo(map);
 

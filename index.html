@@ -3753,10 +3753,17 @@ function zoomAGrupo(map, g) {
   map.fitBounds(b, { padding:[60,60], maxZoom:zMax });
 }
 
+/* Key de CARTO Basemaps (pública por diseño: viaja en la URL de cada tile). Sin key,
+   desde fines de agosto de 2026 los tiles salen con "API KEY REQUIRED" estampado.
+   Restringida a agrodesign.site, www. y dashboard.: desde otro origen (localhost y
+   los _preview/ incluidos) CARTO responde 403 y el mapa queda sin fondo. Si se rota,
+   actualizar también embed/agrodesign-mapa.js y la copia de la landing. */
+var CARTO_KEY = 'cb1_3mj7_1_17ca75e190cd9c69101c988d';
+
 function initBalanceMap(m) {
   if (balanceMap) { balanceMap.remove(); balanceMap = null; }
   balanceMap = L.map('balance-map', { scrollWheelZoom:true, worldCopyJump:true, zoomControl:true, zoomSnap:0.25, zoomDelta:0.25, wheelPxPerZoomLevel:120 });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
     attribution:'© OpenStreetMap, © CARTO', subdomains:'abcd', maxZoom:19
   }).addTo(balanceMap);
 
